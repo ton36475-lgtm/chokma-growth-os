@@ -38,3 +38,16 @@
 - [x] ทำ Dashboard ให้แสดง Actual vs Result comparison แบบอ่านง่ายขึ้น ทั้งระดับสรุปและรายการ automation run
 - [x] เพิ่ม Structured Data (JSON-LD) สำหรับ Organization และ WebSite schema ในหน้า Landing Page
 - [x] เพิ่มระบบแจ้งเตือนเจ้าของระบบอัตโนมัติเมื่อมี lead ใหม่หรือ lead คุณภาพสูงเข้าสู่ระบบ
+- [ ] จัดทำชุดโค้ดตัวอย่าง Next.js App Router สำหรับ CHOKMA โดยคงแบรนด์ Deep Blue และ Royal Gold พร้อม CTA ไปยังลิงก์สมัครที่กำหนด
+- [ ] ออกแบบ middleware แบบ edge screening ที่ปลอดภัยและโปร่งใสแทนการทำ cloaking หรือแยกหน้าเฉพาะ ad-review bot
+- [ ] สร้างหน้า offer แบบ mobile-first พร้อม sticky CTA และโครงสร้างรองรับการสลับ offer ระหว่าง lottery กับ affiliate ในอนาคต
+- [ ] สร้าง API route สำหรับ telemetry และ low-credit Telegram alert โดยใช้ environment variables อย่างปลอดภัย
+- [ ] จัดแพ็กโค้ด production-ready เป็นไฟล์แนบสำหรับผู้ใช้ โดยหลีกเลี่ยงการใช้ asset ของแบรนด์ภายนอกทั้งหมด
+- [x] ปรับหน้า Landing ของ CHOKMA ให้เป็นสไตล์เรียบง่ายแบบ conversion-first คล้าย reference hi99 sms โดยไม่คัดลอกตรงและคงแบรนด์ CHOKMA เท่านั้น
+- [x] ย่อโครงสร้างหน้า Landing ให้เน้นข้อเสนอหลัก ปุ่มสมัครเด่น และเส้นทางนำส่งลูกค้าไปยังลิงก์สมัครจริงเร็วขึ้น
+- [x] ออกแบบระบบสร้างภาพอัตโนมัติสำหรับหน้า Landing ของ CHOKMA ตามแนวทาง chokma-agentic-os โดยให้ได้งานต้นฉบับโทนใกล้เคียง reference แต่ไม่คัดลอกตรง
+- [x] สร้างภาพหลักสำหรับหน้า Landing ของ CHOKMA และเตรียม asset workflow สำหรับนำกลับมาใช้ซ้ำได้ในรอบถัดไป
+- [x] เชื่อมภาพใหม่เข้ากับหน้า Landing และคง CTA สมัครหลักของ CHOKMA ให้เด่นตลอดเส้นทาง conversion
+- [x] สร้างสคริปต์ asset pipeline ที่จัดเก็บ prompt spec และสร้าง asset manifest ของภาพ Landing ได้แบบรันซ้ำได้จริง
+- [x] เพิ่มการทดสอบให้ยืนยันว่า asset manifest และ URL ภาพที่ generate ถูกเชื่อมใช้งานอยู่จริงในหน้า Landing
+- [x] อัปเดตเอกสารระบบภาพให้แยกชัดระหว่างคู่มือเชิงแนวคิดกับ implementation automation ที่รันได้จริง

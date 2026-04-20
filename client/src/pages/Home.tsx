@@ -7,10 +7,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { getLoginUrl } from "@/const";
 import { trpc } from "@/lib/trpc";
 import { ArrowRight, BadgePercent, Crown, Gift, Landmark, ShieldCheck, Sparkles, Wallet } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 const registrationUrl = "https://xn--42cl4e4cwd.net/auth/registration?af=u2vZe3xLLiJ7";
+const heroVisualUrl = "https://d2xsxph8kpxj0f.cloudfront.net/310519663577937161/UPS7b47Kjq2aW47iS7LQXC/chokma-hero-poster-XsmNSXNMpQZEnQfEdjKbGS.webp";
+const lotteryVisualUrl = "https://d2xsxph8kpxj0f.cloudfront.net/310519663577937161/UPS7b47Kjq2aW47iS7LQXC/chokma-lottery-strip-LdrAKnifFc43xoUZ9rS3Dr.webp";
+const affiliateVisualUrl = "https://d2xsxph8kpxj0f.cloudfront.net/310519663577937161/UPS7b47Kjq2aW47iS7LQXC/chokma-affiliate-offer-cCNyExkL4DdC9UwREw8YAa.webp";
 
 const highlightCards = [
   {
@@ -326,7 +329,17 @@ export default function Home() {
               </div>
             </div>
 
-            <Card className="border-white/10 bg-white/8 text-white shadow-2xl backdrop-blur">
+            <Card className="overflow-hidden border-white/10 bg-white/8 text-white shadow-2xl backdrop-blur">
+              <div className="border-b border-white/10 bg-slate-950/20 p-3">
+                <div className="overflow-hidden rounded-2xl border border-white/10 bg-slate-950/30">
+                  <img
+                    src={heroVisualUrl}
+                    alt="ภาพประกอบหลักของแคมเปญ CHOKMA โทนน้ำเงิน-ทอง"
+                    className="h-56 w-full object-cover"
+                    loading="eager"
+                  />
+                </div>
+              </div>
               <CardHeader>
                 <CardTitle className="text-2xl">สมัครเร็ว ตัดสินใจง่าย</CardTitle>
                 <CardDescription className="text-white/70">
@@ -346,6 +359,29 @@ export default function Home() {
                   สำหรับผู้ใช้ที่ยังไม่พร้อมสมัครทันที หน้าเดียวกันนี้ยังมีฟอร์ม lead เพื่อส่งข้อมูลเข้า CRM และให้ทีมดูแลต่อโดยไม่ทำให้ทราฟฟิกสูญหาย
                 </div>
               </CardContent>
+            </Card>
+          </div>
+        </section>
+
+        <section className="container py-8 lg:py-10">
+          <div className="grid gap-4 lg:grid-cols-2">
+            <Card className="overflow-hidden border-border/70 bg-card/95 shadow-sm">
+              <div className="aspect-[4/3] overflow-hidden border-b border-border/70 bg-slate-950/10">
+                <img src={lotteryVisualUrl} alt="ภาพประกอบข้อเสนอหวยของ CHOKMA" className="h-full w-full object-cover" loading="lazy" />
+              </div>
+              <CardHeader>
+                <CardTitle className="text-xl">ข้อเสนอหวยที่มองแล้วเข้าใจทันที</CardTitle>
+                <CardDescription>ภาพชุดนี้ถูกใช้เพื่อทำให้ข้อความ 4 ตัว 7,000 บาท และ 3 ตัว 1,200 บาท มีแรงดึงดูดขึ้นโดยไม่ทำให้หน้าเว็บรกเกินไป</CardDescription>
+              </CardHeader>
+            </Card>
+            <Card className="overflow-hidden border-border/70 bg-card/95 shadow-sm">
+              <div className="aspect-[4/3] overflow-hidden border-b border-border/70 bg-slate-950/10">
+                <img src={affiliateVisualUrl} alt="ภาพประกอบระบบแนะนำเพื่อนของ CHOKMA" className="h-full w-full object-cover" loading="lazy" />
+              </div>
+              <CardHeader>
+                <CardTitle className="text-xl">ภาพรองรับ hook สำหรับ referral และ affiliate</CardTitle>
+                <CardDescription>โทนน้ำเงิน-ทองเดียวกันช่วยให้ข้อเสนอแนะนำเพื่อนสูงสุด 3% อ่านเป็นแพ็กเดียวกับข้อเสนอหลักและพร้อมต่อยอดทำ A/B blocks ได้ในภายหลัง</CardDescription>
+              </CardHeader>
             </Card>
           </div>
         </section>
