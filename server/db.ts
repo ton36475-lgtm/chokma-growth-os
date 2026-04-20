@@ -1,9 +1,37 @@
-import { eq } from "drizzle-orm";
+import { desc, eq, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users } from "../drizzle/schema";
-import { ENV } from './_core/env';
+import {
+  automationRuns,
+  broadcastQueues,
+  campaigns,
+  customerProfiles,
+  depositEvents,
+  InsertAutomationRun,
+  InsertBroadcastQueue,
+  InsertCampaign,
+  InsertCustomerProfile,
+  InsertDepositEvent,
+  InsertLead,
+  InsertLeadEvent,
+  InsertUser,
+  InsertVipNote,
+  leadEvents,
+  leads,
+  users,
+  vipNotes,
+} from "../drizzle/schema";
+import { ENV } from "./_core/env";
 
 let _db: ReturnType<typeof drizzle> | null = null;
+
+type InsertResultLike = {
+  insertId?: number;
+};
+
+function extractInsertId(result: unknown): number {
+  const maybe = result as InsertResultLike;
+  return typeof maybe?.insertId === "number" ? maybe.insertId : 0;
+}
 
 // Lazily create the drizzle instance so local tooling can run without a DB.
 export async function getDb() {
@@ -56,8 +84,8 @@ export async function upsertUser(user: InsertUser): Promise<void> {
       values.role = user.role;
       updateSet.role = user.role;
     } else if (user.openId === ENV.ownerOpenId) {
-      values.role = 'admin';
-      updateSet.role = 'admin';
+      values.role = "admin";
+      updateSet.role = "admin";
     }
 
     if (!values.lastSignedIn) {
@@ -85,8 +113,215 @@ export async function getUserByOpenId(openId: string) {
   }
 
   const result = await db.select().from(users).where(eq(users.openId, openId)).limit(1);
-
   return result.length > 0 ? result[0] : undefined;
 }
 
-// TODO: add feature queries here as your schema grows.
+export async function createCampaign(input: InsertCampaign) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const result = await db.insert(campaigns).values(input);
+  return extractInsertId(result);
+}
+
+export async function listCampaigns() {
+  const db = await getDb();
+  if (!db) return [];
+
+  return db.select().from(campaigns).orderBy(desc(campaigns.createdAt));
+}
+
+export async function createLead(input: InsertLead) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const result = await db.insert(leads).values(input);
+  return extractInsertId(result);
+}
+
+export async function getLeadById(id: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+
+  const result = await db.select().from(leads).where(eq(leads.id, id)).limit(1);
+  return result[0];
+}
+
+export async function listRecentLeads(limit = 20) {
+  const db = await getDb();
+  if (!db) return [];
+
+  return db.select().from(leads).orderBy(desc(leads.createdAt)).limit(limit);
+}
+
+export async function updateLeadStatus(id: number, leadStatus: InsertLead["leadStatus"]) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  await db.update(leads).set({ leadStatus, lastActivityAt: new Date() }).where(eq(leads.id, id));
+}
+
+export async function createLeadEvent(input: InsertLeadEvent) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const result = await db.insert(leadEvents).values(input);
+  return extractInsertId(result);
+}
+
+export async function createOrUpdateCustomerProfile(input: InsertCustomerProfile) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const existing = await db
+    .select()
+    .from(customerProfiles)
+    .where(eq(customerProfiles.leadId, input.leadId))
+    .limit(1);
+
+  if (existing[0]) {
+    await db
+      .update(customerProfiles)
+      .set({
+        assignedUserId: input.assignedUserId,
+        vipLevel: input.vipLevel,
+        cumulativeDeposit: input.cumulativeDeposit,
+        lifetimeRevenue: input.lifetimeRevenue,
+        followUpStatus: input.followUpStatus,
+        preferredLottery: input.preferredLottery,
+        affordabilityBand: input.affordabilityBand,
+        segmentLabel: input.segmentLabel,
+        lastContactAt: input.lastContactAt,
+        nextFollowUpAt: input.nextFollowUpAt,
+      })
+      .where(eq(customerProfiles.leadId, input.leadId));
+
+    return existing[0].id;
+  }
+
+  const result = await db.insert(customerProfiles).values(input);
+  return extractInsertId(result);
+}
+
+export async function listWhaleProfiles() {
+  const db = await getDb();
+  if (!db) return [];
+
+  return db
+    .select()
+    .from(customerProfiles)
+    .where(eq(customerProfiles.vipLevel, "whale"))
+    .orderBy(desc(customerProfiles.cumulativeDeposit));
+}
+
+export async function addVipNote(input: InsertVipNote) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const result = await db.insert(vipNotes).values(input);
+  return extractInsertId(result);
+}
+
+export async function listVipNotesForLead(leadId: number) {
+  const db = await getDb();
+  if (!db) return [];
+
+  return db.select().from(vipNotes).where(eq(vipNotes.leadId, leadId)).orderBy(desc(vipNotes.createdAt));
+}
+
+export async function createDepositEvent(input: InsertDepositEvent) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const result = await db.insert(depositEvents).values(input);
+  return extractInsertId(result);
+}
+
+export async function createAutomationRun(input: InsertAutomationRun) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const result = await db.insert(automationRuns).values(input);
+  return extractInsertId(result);
+}
+
+export async function listAutomationRuns(limit = 20) {
+  const db = await getDb();
+  if (!db) return [];
+
+  return db.select().from(automationRuns).orderBy(desc(automationRuns.createdAt)).limit(limit);
+}
+
+export async function createBroadcastQueue(input: InsertBroadcastQueue) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const result = await db.insert(broadcastQueues).values(input);
+  return extractInsertId(result);
+}
+
+export async function listBroadcastQueues(limit = 20) {
+  const db = await getDb();
+  if (!db) return [];
+
+  return db.select().from(broadcastQueues).orderBy(desc(broadcastQueues.createdAt)).limit(limit);
+}
+
+export async function getDashboardSnapshot() {
+  const db = await getDb();
+  if (!db) {
+    return {
+      newLeads: 0,
+      convertedLeads: 0,
+      totalDeposits: 0,
+      totalSpend: 0,
+      conversionRate: 0,
+      roi: 0,
+      costPerAcquisition: 0,
+      activeCampaigns: 0,
+      queuedAutomations: 0,
+    };
+  }
+
+  const [leadCountRow] = await db.select({ value: sql<number>`count(*)` }).from(leads);
+  const [convertedCountRow] = await db
+    .select({ value: sql<number>`count(*)` })
+    .from(leads)
+    .where(eq(leads.leadStatus, "converted"));
+  const [depositTotalRow] = await db
+    .select({ value: sql<number>`coalesce(sum(${depositEvents.amount}), 0)` })
+    .from(depositEvents);
+  const [spendTotalRow] = await db
+    .select({ value: sql<number>`coalesce(sum(${campaigns.spend}), 0)` })
+    .from(campaigns);
+  const [activeCampaignRow] = await db
+    .select({ value: sql<number>`count(*)` })
+    .from(campaigns)
+    .where(eq(campaigns.status, "active"));
+  const [queuedAutomationRow] = await db
+    .select({ value: sql<number>`count(*)` })
+    .from(automationRuns)
+    .where(eq(automationRuns.status, "queued"));
+
+  const newLeads = Number(leadCountRow?.value ?? 0);
+  const convertedLeads = Number(convertedCountRow?.value ?? 0);
+  const totalDeposits = Number(depositTotalRow?.value ?? 0);
+  const totalSpend = Number(spendTotalRow?.value ?? 0);
+  const activeCampaigns = Number(activeCampaignRow?.value ?? 0);
+  const queuedAutomations = Number(queuedAutomationRow?.value ?? 0);
+  const conversionRate = newLeads > 0 ? (convertedLeads / newLeads) * 100 : 0;
+  const costPerAcquisition = convertedLeads > 0 ? totalSpend / convertedLeads : 0;
+  const roi = totalSpend > 0 ? ((totalDeposits - totalSpend) / totalSpend) * 100 : 0;
+
+  return {
+    newLeads,
+    convertedLeads,
+    totalDeposits,
+    totalSpend,
+    conversionRate,
+    roi,
+    costPerAcquisition,
+    activeCampaigns,
+    queuedAutomations,
+  };
+}
