@@ -6,59 +6,63 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { getLoginUrl } from "@/const";
 import { trpc } from "@/lib/trpc";
-import {
-  ArrowRight,
-  BadgePercent,
-  BarChart3,
-  CircleDollarSign,
-  Crown,
-  Gift,
-  ShieldCheck,
-  Sparkles,
-  Wallet,
-} from "lucide-react";
+import { ArrowRight, BadgePercent, Crown, ShieldCheck, Wallet } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 const registrationUrl = "https://xn--42cl4e4cwd.net/auth/registration?af=u2vZe3xLLiJ7";
 
-const uspCards = [
+const highlightCards = [
   {
-    icon: Gift,
-    title: "เครดิตฟรีรวม 100,000 บาท",
-    description: "ใช้โปรโมชันต้อนรับเพื่อดึงผู้เล่นใหม่ และเร่งการเปลี่ยนจากผู้ชมเป็นผู้สมัครให้เร็วขึ้น",
+    title: "หวย 4 ตัว 7,000 บาท",
+    description: "ใช้ข้อเสนอที่จำง่ายและเห็นแล้วตัดสินใจได้เร็ว เพื่อพาผู้เล่นเข้าสู่ขั้นตอนสมัครโดยไม่ต้องอ่านเยอะ",
   },
   {
-    icon: BadgePercent,
+    title: "หวย 3 ตัว 1,200 บาท",
+    description: "สื่อสารข้อเสนอหลักให้ตรงประเด็น พร้อมคงโทนแบรนด์ CHOKMA แบบน้ำเงิน-ทองอย่างสม่ำเสมอ",
+  },
+  {
     title: "แนะนำเพื่อนรับ 1% ถึง 3%",
-    description: "วางข้อเสนอแบบขั้นบันได 5 คนรับ 1%, 10 คนรับ 2% และ 50 คนรับ 3% เพื่อเร่งการเติบโตเชิง referral พร้อมเชื่อมกับ campaign attribution",
-  },
-  {
-    icon: Crown,
-    title: "เน้นลูกค้าขาใหญ่และสายหวยจริงจัง",
-    description: "ออกแบบ copy และเส้นทาง conversion ให้เหมาะกับผู้เล่นที่ต้องการความมั่นคง ความสะดวก และการดูแลต่อเนื่อง",
+    description: "เปิดแรงจูงใจแบบขั้นบันไดเพื่อดึงทั้งผู้เล่นตรงและผู้ที่มีศักยภาพต่อยอด referral ในอนาคต",
   },
 ];
 
-const trustPoints = [
-  "รองรับมือถือแบบเต็มรูปแบบ พร้อมปุ่มสมัครที่กดได้ทันทีทุกช่วงของหน้าและคงเอกลักษณ์แบรนด์ CHOKMA เท่านั้น",
-  "วัดผลต้นทางแคมเปญผ่าน UTM tracking และ referrer capture อัตโนมัติ พร้อมแยกคุณภาพทราฟฟิกอย่างโปร่งใสเพื่อการวิเคราะห์",
-  "เชื่อมต่อไปยัง CRM และ dashboard เพื่อติดตาม lead คุณภาพสูงกับผลลัพธ์จริง",
-  "รองรับการต่อยอดจาก workflow broadcast และการจัดการลูกค้าปลาวาฬในระบบเดียว",
+const trustRows = [
+  "สมัครง่าย เริ่มจากกรอกเบอร์มือถือในหน้าสมัครจริงของ CHOKMA โดยตรง",
+  "หน้า Landing นี้เก็บ UTM, referrer และสัญญาณทราฟฟิกเพื่อต่อเข้า CRM กับ Dashboard อัตโนมัติ",
+  "ทีมงานสามารถติดตามลูกค้าคุณภาพสูงต่อใน CRM พร้อมดู deposit history และ actual versus result ได้",
+];
+
+const organicBlocks = [
+  {
+    title: "เว็บหวยจ่ายสูง",
+    description:
+      "สำหรับคนที่ค้นหาเว็บหวยจ่ายสูง หน้าแรกควรตอบทันทีว่าได้อะไร สมัครอย่างไร และต้องกดตรงไหนต่อ โดยไม่ทำให้หลุดจากเส้นทาง conversion หลัก",
+  },
+  {
+    title: "สมัครเว็บหวย",
+    description:
+      "ผู้ใช้ที่พร้อมสมัครไม่ต้องการโครงสร้างซับซ้อน หน้าใหม่จึงพาไปยังลิงก์สมัครจริงได้เร็ว และยังมีฟอร์ม lead สำรองไว้ให้ทีมติดตามต่อ",
+  },
+  {
+    title: "เลขเด็ดและแนวทางหวย",
+    description:
+      "ผู้ใช้สาย organic ที่เข้ามาด้วย intent เชิงข้อมูลยังต้องเห็นข้อเสนอหลักและ trust element อย่างชัดเจน เพื่อเปลี่ยนจากผู้อ่านให้กลายเป็นผู้สมัครได้ง่ายขึ้น",
+  },
 ];
 
 const faqItems = [
   {
-    q: "ระบบนี้ช่วยทีม acquisition อย่างไร",
-    a: "หน้าแลนดิ้งนี้ออกแบบให้รับลีดจริงพร้อมข้อมูลแหล่งที่มาแคมเปญ เพื่อให้ทีมสามารถรู้ได้ทันทีว่าทราฟฟิกใดสร้างผลลัพธ์ดีที่สุดและควรเพิ่มงบตรงไหนต่อ",
+    q: "ทำไมหน้าใหม่ต้องเรียบง่ายกว่าก่อนหน้า",
+    a: "เพราะผู้ใช้กลุ่มนี้ตัดสินใจจากข้อเสนอหลักและความเร็วในการเข้าสู่ขั้นตอนสมัคร การลดทางเลือกที่ไม่จำเป็นช่วยให้ conversion path สั้นลงและชัดขึ้น",
   },
   {
-    q: "ทำไมต้องมี lead form ทั้งที่มีลิงก์สมัครตรง",
-    a: "ลิงก์สมัครตรงยังจำเป็นต่อ conversion แต่การมี lead form ช่วยเก็บข้อมูลสำหรับการติดตาม การแบ่งกลุ่ม VIP และการวัด actual versus result เมื่อเทียบกับงบที่ใช้ไปจริง",
+    q: "ลิงก์สมัครชี้ไปที่ไหน",
+    a: "ทุก CTA หลักของหน้าเชื่อมไปยังหน้าสมัครจริงของ CHOKMA โดยตรง เพื่อให้ประสบการณ์ตั้งแต่คลิกโฆษณาจนถึงเริ่มสมัครมีความต่อเนื่องมากที่สุด",
   },
   {
-    q: "ระบบนี้รองรับการขยายต่อไปด้าน CRM หรือ broadcast หรือไม่",
-    a: "รองรับ โดยข้อมูล lead, notes, deposit และ queue ถูกออกแบบให้อยู่ในสถาปัตยกรรมเดียวกันตั้งแต่ต้น จึงต่อยอดสู่การติดตามลูกค้าขาใหญ่และการย้ายจาก manual broadcast ได้อย่างเป็นระบบ",
+    q: "ฟอร์ม lead ยังจำเป็นอยู่หรือไม่",
+    a: "ยังจำเป็น เพราะช่วยเก็บข้อมูลแหล่งที่มาแคมเปญและเปิดทางให้ทีม CRM ติดตามผู้ใช้ที่ยังไม่สมัครทันที แต่มี intent สูงหรือมีศักยภาพเป็นลูกค้ามูลค่าสูง",
   },
 ];
 
@@ -107,25 +111,60 @@ export default function Home() {
     }));
   }, []);
 
+  useEffect(() => {
+    const title = "CHOKMA | สมัครง่าย หวยจ่ายสูง 4 ตัว 7,000 บาท 3 ตัว 1,200 บาท";
+    const description =
+      "หน้า Landing Page ของ CHOKMA ที่ออกแบบให้เรียบง่าย ตรงประเด็น กดสมัครได้ทันที พร้อมเก็บ lead, UTM tracking และเชื่อม CRM กับ Dashboard หลังบ้าน";
+    const canonical = `${window.location.origin}${window.location.pathname}`;
+
+    const ensureMeta = (selector: string, attribute: "name" | "property", key: string, content: string) => {
+      let element = document.head.querySelector(selector) as HTMLMetaElement | null;
+      if (!element) {
+        element = document.createElement("meta");
+        element.setAttribute(attribute, key);
+        document.head.appendChild(element);
+      }
+      element.setAttribute("content", content);
+    };
+
+    const ensureLink = (rel: string, href: string) => {
+      let element = document.head.querySelector(`link[rel="${rel}"]`) as HTMLLinkElement | null;
+      if (!element) {
+        element = document.createElement("link");
+        element.setAttribute("rel", rel);
+        document.head.appendChild(element);
+      }
+      element.setAttribute("href", href);
+    };
+
+    document.title = title;
+    ensureMeta('meta[name="description"]', "name", "description", description);
+    ensureMeta('meta[property="og:title"]', "property", "og:title", title);
+    ensureMeta('meta[property="og:description"]', "property", "og:description", description);
+    ensureMeta('meta[property="og:type"]', "property", "og:type", "website");
+    ensureMeta('meta[property="og:url"]', "property", "og:url", canonical);
+    ensureMeta('meta[name="twitter:card"]', "name", "twitter:card", "summary_large_image");
+    ensureMeta('meta[name="twitter:title"]', "name", "twitter:title", title);
+    ensureMeta('meta[name="twitter:description"]', "name", "twitter:description", description);
+    ensureLink("canonical", canonical);
+  }, []);
+
   const structuredData = useMemo(
     () => ({
       "@context": "https://schema.org",
       "@type": "WebPage",
-      name: "Chokma Growth Landing Page",
+      name: "CHOKMA Landing Page",
       description:
-        "Landing Page สำหรับรับ lead คุณภาพสูง พร้อมระบบติดตาม UTM, CRM และ dashboard สำหรับทีมการตลาดของ โชคมา.net",
+        "หน้า Landing Page ของ CHOKMA ที่ออกแบบเพื่อ conversion สูง พร้อมเก็บ lead, UTM tracking, CRM integration และ organic intent content สำหรับกลุ่มเว็บหวยจ่ายสูง",
       url: typeof window !== "undefined" ? window.location.href : "https://xn--42cl4e4cwd.net",
-      mainEntity: {
-        "@type": "FAQPage",
-        mainEntity: faqItems.map((item) => ({
-          "@type": "Question",
-          name: item.q,
-          acceptedAnswer: {
-            "@type": "Answer",
-            text: item.a,
-          },
-        })),
-      },
+      mainEntity: faqItems.map((item) => ({
+        "@type": "Question",
+        name: item.q,
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: item.a,
+        },
+      })),
     }),
     [],
   );
@@ -155,25 +194,31 @@ export default function Home() {
     <div className="min-h-screen bg-background text-foreground">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} />
 
-      <header className="sticky top-0 z-40 border-b border-border/60 bg-background/80 backdrop-blur">
-        <div className="container flex h-16 items-center justify-between gap-4">
+      <header className="sticky top-0 z-40 border-b border-border/60 bg-background/90 backdrop-blur">
+        <div className="container flex h-16 items-center justify-between gap-3">
           <div>
-            <p className="text-xs uppercase tracking-[0.24em] text-primary">Chokma Growth OS</p>
-            <h1 className="text-sm font-semibold sm:text-base">Full-Stack Marketing & CRM Platform</h1>
+            <p className="text-xs uppercase tracking-[0.24em] text-primary">CHOKMA</p>
+            <p className="text-sm font-semibold sm:text-base">สมัครง่าย จบไว และวัดผลได้จริง</p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             {isAuthenticated ? (
-              <Button asChild variant="outline" className="border-primary/30 bg-background text-foreground">
+              <Button asChild variant="outline" className="border-primary/20 bg-background text-foreground">
                 <a href="/dashboard">เปิด Dashboard</a>
               </Button>
             ) : (
-              <Button variant="outline" className="border-primary/30 bg-background text-foreground" onClick={() => (window.location.href = getLoginUrl())}>
+              <Button
+                variant="outline"
+                className="hidden border-primary/20 bg-background text-foreground sm:inline-flex"
+                onClick={() => {
+                  window.location.href = getLoginUrl();
+                }}
+              >
                 เข้าสู่ระบบทีมงาน
               </Button>
             )}
             <Button asChild className="shadow-lg shadow-primary/20">
               <a href={registrationUrl} target="_blank" rel="noreferrer">
-                สมัครใช้งานทันที
+                สมัครทันที
               </a>
             </Button>
           </div>
@@ -181,36 +226,33 @@ export default function Home() {
       </header>
 
       <main>
-        <section className="relative overflow-hidden border-b border-border/60 bg-[radial-gradient(circle_at_top_right,_rgba(250,204,21,0.16),_transparent_28%),linear-gradient(180deg,rgba(12,25,52,1)_0%,rgba(7,12,24,1)_100%)] text-white">
-          <div className="container grid gap-10 py-16 lg:grid-cols-[1.2fr_0.8fr] lg:py-24">
-            <div className="space-y-8">
-              <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/8 px-4 py-2 text-sm text-white/80">
-                <Sparkles className="h-4 w-4 text-amber-300" />
-                ระบบหาลูกค้า สมัครเล่น และติดตามผลในแพลตฟอร์มเดียว
+        <section className="border-b border-border/60 bg-[radial-gradient(circle_at_top_right,_rgba(250,204,21,0.18),_transparent_24%),linear-gradient(180deg,rgba(11,37,84,1)_0%,rgba(6,18,44,1)_100%)] text-white">
+          <div className="container grid gap-8 py-14 lg:grid-cols-[1.1fr_0.9fr] lg:py-20">
+            <div className="space-y-6">
+              <div className="inline-flex items-center rounded-full border border-white/15 bg-white/8 px-4 py-2 text-sm text-white/80">
+                หน้าเดียวสำหรับโฆษณา สมัคร และส่งข้อมูลเข้า CRM
               </div>
-              <div className="space-y-5">
-                <p className="max-w-xl text-sm uppercase tracking-[0.24em] text-amber-300">Conversion-first landing experience</p>
-                <h2 className="max-w-3xl text-4xl font-semibold leading-tight sm:text-5xl lg:text-6xl">
-                  รับลูกค้าใหม่ให้เร็วขึ้น พร้อมคัด <span className="text-amber-300">ผู้เล่นมูลค่าสูง</span> เข้าสู่ CRM อย่างเป็นระบบ
-                </h2>
-                <p className="max-w-2xl text-base leading-7 text-white/72 sm:text-lg">
-                  หน้า Landing Page นี้ถูกออกแบบเพื่อเชื่อมโฆษณา การสมัคร การเก็บ UTM การวัดผลแคมเปญ และการดูแลลูกค้าปลาวาฬเข้าด้วยกัน โดยใช้แบรนด์ CHOKMA โทนน้ำเงิน-ทองอย่างสม่ำเสมอ และเน้นกลุ่มเป้าหมายที่ชอบเดิมพันหวย มีศักยภาพสร้างรายได้สูง และตอบสนองต่อข้อเสนอชัดเจนอย่างหวย 4 ตัว 7,000 บาท กับ 3 ตัว 1,200 บาท
+              <div className="space-y-4">
+                <p className="text-sm uppercase tracking-[0.26em] text-amber-300">Simple, direct, conversion-first</p>
+                <h1 className="max-w-4xl text-4xl font-semibold leading-tight sm:text-5xl lg:text-6xl">
+                  สมัคร <span className="text-amber-300">CHOKMA</span> ง่ายกว่าเดิม
+                  <br />
+                  เห็นข้อเสนอแล้วกดต่อได้ทันที
+                </h1>
+                <p className="max-w-2xl text-base leading-7 text-white/74 sm:text-lg">
+                  หน้า Landing ใหม่นี้ถูกปรับให้เรียบง่ายและจบไวตามแนวทางที่ผู้ใช้ชอบ โดยยกข้อเสนอหลักขึ้นมาเป็นตัวตัดสินใจทันที แล้วพาผู้ใช้ไปยังหน้าสมัครจริงของ CHOKMA โดยตรง พร้อมเก็บ lead และข้อมูลแคมเปญเพื่อให้ทีมติดตามผลต่อได้ในระบบเดียว
                 </p>
               </div>
+
               <div className="grid gap-3 sm:grid-cols-3">
-                <div className="rounded-2xl border border-white/10 bg-white/8 p-4 backdrop-blur">
-                  <p className="text-3xl font-semibold text-amber-300">3%</p>
-                  <p className="mt-2 text-sm text-white/72">ค่าคอมแนะนำเพื่อนสูงสุด สำหรับแผน affiliate และ referral engine</p>
-                </div>
-                <div className="rounded-2xl border border-white/10 bg-white/8 p-4 backdrop-blur">
-                  <p className="text-3xl font-semibold text-amber-300">7,000</p>
-                  <p className="mt-2 text-sm text-white/72">ข้อเสนอหวยหลักของแบรนด์ CHOKMA โดยใช้ข้อความ 4 ตัว 7,000 บาท และ 3 ตัว 1,200 บาท เป็น hook หลักในงานโฆษณา</p>
-                </div>
-                <div className="rounded-2xl border border-white/10 bg-white/8 p-4 backdrop-blur">
-                  <p className="text-3xl font-semibold text-amber-300">100K</p>
-                  <p className="mt-2 text-sm text-white/72">มูลค่าเครดิตฟรีรวมที่ใช้เป็น hook เพื่อเร่ง conversion ในหน้าแรก</p>
-                </div>
+                {highlightCards.map((item) => (
+                  <div key={item.title} className="rounded-2xl border border-white/10 bg-white/8 p-4 backdrop-blur">
+                    <p className="text-lg font-semibold text-amber-300">{item.title}</p>
+                    <p className="mt-2 text-sm leading-6 text-white/72">{item.description}</p>
+                  </div>
+                ))}
               </div>
+
               <div className="flex flex-col gap-3 sm:flex-row">
                 <Button asChild size="lg" className="h-12 rounded-full bg-amber-400 px-7 text-slate-950 hover:bg-amber-300">
                   <a href={registrationUrl} target="_blank" rel="noreferrer">
@@ -218,108 +260,121 @@ export default function Home() {
                   </a>
                 </Button>
                 <Button asChild size="lg" variant="outline" className="h-12 rounded-full border-white/20 bg-white/5 px-7 text-white hover:bg-white/10 hover:text-white">
-                  <a href="#lead-form">ส่งข้อมูลให้ทีมติดต่อกลับ</a>
+                  <a href="#lead-form">ให้ทีมงานติดต่อกลับ</a>
                 </Button>
+              </div>
+
+              <div className="grid gap-3 text-sm text-white/78 sm:grid-cols-3">
+                <div className="rounded-2xl border border-white/10 bg-slate-950/20 p-4">สมัครต่อได้ทันทีจากปุ่มหลักทุกจุดของหน้า</div>
+                <div className="rounded-2xl border border-white/10 bg-slate-950/20 p-4">โทนแบรนด์ CHOKMA แบบน้ำเงิน-ทองต่อเนื่องถึงหน้าสมัครจริง</div>
+                <div className="rounded-2xl border border-white/10 bg-slate-950/20 p-4">เก็บ UTM และ lead เพื่อเชื่อม Dashboard กับ CRM หลังบ้าน</div>
               </div>
             </div>
 
             <Card className="border-white/10 bg-white/8 text-white shadow-2xl backdrop-blur">
               <CardHeader>
-                <CardTitle className="text-2xl">จุดแข็งของข้อเสนอ</CardTitle>
-                <CardDescription className="text-white/65">
-                  หน้าเดียวที่ใช้เป็นทั้ง conversion surface, data capture layer และประตูเข้าสู่ระบบ CRM หลังบ้าน โดยยึดกฎแบรนด์ CHOKMA เท่านั้นในทุก asset และข้อความหลัก
+                <CardTitle className="text-2xl">สมัครเร็ว ตัดสินใจง่าย</CardTitle>
+                <CardDescription className="text-white/70">
+                  โครงหน้านี้ถูกออกแบบให้เหมือนหน้าแคมเปญที่เน้นเป้าหมายเดียว คือพาผู้ใช้ไปเริ่มสมัคร หรือส่งข้อมูลให้ทีมงานติดตามต่อทันที
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
-                {uspCards.map((item) => (
-                  <div key={item.title} className="rounded-2xl border border-white/10 bg-slate-950/30 p-4">
-                    <div className="flex items-center gap-3">
-                      <div className="rounded-xl bg-amber-300/15 p-2 text-amber-300">
-                        <item.icon className="h-5 w-5" />
-                      </div>
-                      <div>
-                        <h3 className="font-semibold">{item.title}</h3>
-                        <p className="mt-1 text-sm leading-6 text-white/70">{item.description}</p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-                <div className="rounded-2xl border border-emerald-300/20 bg-emerald-400/10 p-4 text-sm leading-6 text-emerald-50">
-                  ระบบนี้พร้อมต่อยอดไปสู่ dashboard ที่วัด lead จริง, deposit จริง, ROI ต่อแคมเปญ และ actual versus result ของงานที่ AI หรือทีมปฏิบัติการดำเนินไปแล้ว โดยไม่ใช้การปลอมหน้าเพื่อหลบการตรวจจับ แต่ใช้การตรวจคุณภาพทราฟฟิกแบบตรวจสอบได้แทน
+              <CardContent className="space-y-4 text-sm leading-7 text-white/76">
+                <div className="rounded-2xl border border-white/10 bg-slate-950/30 p-4">
+                  <p className="font-semibold text-amber-300">Step 1</p>
+                  <p className="mt-1">เห็นข้อเสนอหลัก เช่น 4 ตัว 7,000 บาท และ 3 ตัว 1,200 บาท ได้ทันทีตั้งแต่ส่วนบนสุดของหน้า</p>
+                </div>
+                <div className="rounded-2xl border border-white/10 bg-slate-950/30 p-4">
+                  <p className="font-semibold text-amber-300">Step 2</p>
+                  <p className="mt-1">กด CTA แล้วไปยังหน้าสมัครจริงของ CHOKMA ที่เริ่มจากการกรอกเบอร์มือถือ ทำให้ flow ต่อเนื่องและจบไว</p>
+                </div>
+                <div className="rounded-2xl border border-emerald-300/20 bg-emerald-400/10 p-4 text-emerald-50">
+                  สำหรับผู้ใช้ที่ยังไม่พร้อมสมัครทันที หน้าเดียวกันนี้ยังมีฟอร์ม lead เพื่อส่งข้อมูลเข้า CRM และให้ทีมดูแลต่อโดยไม่ทำให้ทราฟฟิกสูญหาย
                 </div>
               </CardContent>
             </Card>
           </div>
         </section>
 
-        <section className="container py-14 lg:py-20">
+        <section className="container py-12 lg:py-16">
           <div className="max-w-2xl">
-            <p className="text-sm font-semibold uppercase tracking-[0.24em] text-primary">Trust and conversion architecture</p>
-            <h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">ออกแบบเพื่อให้โฆษณาไม่หยุดแค่คลิก แต่ไหลต่อไปเป็นข้อมูลเชิงธุรกิจ</h2>
+            <p className="text-sm font-semibold uppercase tracking-[0.24em] text-primary">Trust elements</p>
+            <h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">หน้าเรียบ แต่ยังวัดผลและต่อยอดหลังบ้านได้ครบ</h2>
             <p className="mt-4 text-base leading-7 text-muted-foreground">
-              นอกจากการนำเสนอโปรโมชัน ระบบนี้ยังวางโครงสร้างข้อมูลสำหรับทีมการตลาดและ CRM โดยตรง ทำให้ทุกคลิกและทุกฟอร์มไม่สูญหาย แต่ถูกแปลงเป็นโอกาสในการติดตามลูกค้า วัดผลแคมเปญ และวิเคราะห์คุณภาพทราฟฟิกได้ทันที
+              แม้หน้าใหม่จะลดความซับซ้อนของเนื้อหา แต่โครงสร้างข้อมูลยังครบสำหรับระบบ Marketing และ CRM ทำให้ทีมยังเห็นทั้ง lead ใหม่ คุณภาพทราฟฟิก แคมเปญที่มาจริง และผลลัพธ์ที่ตามมาจริงในระดับปฏิบัติการ
             </p>
           </div>
-          <div className="mt-8 grid gap-4 lg:grid-cols-4">
-            {trustPoints.map((point, index) => (
-              <Card key={point} className="border-border/70 bg-card/80 shadow-sm">
-                <CardContent className="p-5">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 font-semibold text-primary">
-                      {index + 1}
-                    </div>
-                    <p className="text-sm leading-6 text-muted-foreground">{point}</p>
-                  </div>
-                </CardContent>
+          <div className="mt-8 grid gap-4 md:grid-cols-3">
+            <Card className="border-primary/10 bg-primary/5 shadow-sm">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-3 text-lg"><ShieldCheck className="h-5 w-5 text-primary" /> สมัครตรงกับแบรนด์จริง</CardTitle>
+              </CardHeader>
+              <CardContent className="text-sm leading-7 text-muted-foreground">
+                ทุก CTA หลักพาไปยังหน้าสมัครจริงของ CHOKMA โดยใช้โดเมนเดียวกับแบรนด์ จึงทำให้เส้นทางตั้งแต่โฆษณาจนถึงเริ่มสมัครมีความต่อเนื่องมากขึ้น
+              </CardContent>
+            </Card>
+            <Card className="border-primary/10 bg-primary/5 shadow-sm">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-3 text-lg"><BadgePercent className="h-5 w-5 text-primary" /> Referral พร้อมต่อยอด</CardTitle>
+              </CardHeader>
+              <CardContent className="text-sm leading-7 text-muted-foreground">
+                ข้อเสนอแนะนำเพื่อน 1% ถึง 3% ถูกยกขึ้นเป็น hook หลักที่อ่านจบได้เร็ว และยังเชื่อมต่อกับการวัดแคมเปญและ referral traffic ในระบบหลังบ้าน
+              </CardContent>
+            </Card>
+            <Card className="border-primary/10 bg-primary/5 shadow-sm">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-3 text-lg"><Crown className="h-5 w-5 text-primary" /> CRM สำหรับลูกค้าคุณภาพสูง</CardTitle>
+              </CardHeader>
+              <CardContent className="text-sm leading-7 text-muted-foreground">
+                ลีดที่เข้ามาจากหน้าเดียวกันนี้ยังสามารถถูกคัดกลุ่มและติดตามต่อใน CRM พร้อม notes, deposit history และ workflow ของทีมปฏิบัติการได้ทันที
+              </CardContent>
+            </Card>
+          </div>
+          <div className="mt-8 grid gap-4 lg:grid-cols-3">
+            {trustRows.map((item) => (
+              <Card key={item} className="border-border/70 bg-card/90">
+                <CardContent className="p-5 text-sm leading-7 text-muted-foreground">{item}</CardContent>
               </Card>
             ))}
           </div>
         </section>
 
         <section className="border-y border-border/60 bg-muted/35">
-          <div className="container grid gap-6 py-14 lg:grid-cols-3 lg:py-18">
-            <Card className="border-primary/10 bg-card/90">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-3 text-xl"><CircleDollarSign className="h-5 w-5 text-primary" /> เส้นทางรายได้ที่วัดผลได้</CardTitle>
-              </CardHeader>
-              <CardContent className="text-sm leading-7 text-muted-foreground">
-                ผู้เข้าชมสามารถไปยังหน้าสมัครตรงหรือกรอกฟอร์มให้ทีมติดตามต่อ ขณะที่ระบบเก็บ source และ intent เพื่อเชื่อมกับ CPA, conversion rate และ ROI ในแดชบอร์ดได้ทันที
-              </CardContent>
-            </Card>
-            <Card className="border-primary/10 bg-card/90">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-3 text-xl"><ShieldCheck className="h-5 w-5 text-primary" /> ความน่าเชื่อถือและการดูแลต่อเนื่อง</CardTitle>
-              </CardHeader>
-              <CardContent className="text-sm leading-7 text-muted-foreground">
-                ส่วน trust element ช่วยให้หน้าไม่ดูเป็นเพียงป้ายโปรโมชั่น แต่เป็นระบบที่พร้อมดูแลต่อผ่าน CRM, VIP notes, deposit tracking และการจัดลำดับ follow-up ตามมูลค่าลูกค้า
-              </CardContent>
-            </Card>
-            <Card className="border-primary/10 bg-card/90">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-3 text-xl"><BarChart3 className="h-5 w-5 text-primary" /> AI operations พร้อม actual vs result</CardTitle>
-              </CardHeader>
-              <CardContent className="text-sm leading-7 text-muted-foreground">
-                ระบบหลังบ้านถูกออกแบบให้สามารถเก็บ planned actions และผลลัพธ์จริง เพื่อใช้เปรียบเทียบสิ่งที่ AI หรือทีมงานดำเนินไปแล้วกับตัวเลขที่เกิดขึ้นจริงในภาคสนาม
-              </CardContent>
-            </Card>
+          <div className="container py-12 lg:py-16">
+            <div className="max-w-2xl">
+              <p className="text-sm font-semibold uppercase tracking-[0.24em] text-primary">Organic intent</p>
+              <h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">รองรับทั้งคนที่กดจากแอด และคนที่เข้ามาจากการค้นหา</h2>
+              <p className="mt-4 text-base leading-7 text-muted-foreground">
+                หน้า CHOKMA ใหม่ยังคงรองรับ SEO และ AEO ด้วย content block ที่ตอบคำค้นหลักอย่างกระชับ เพื่อไม่ให้ organic traffic เจอเพียงหน้าขายอย่างเดียว แต่ได้คำอธิบายที่พาไปสู่การสมัครอย่างเป็นธรรมชาติ
+              </p>
+            </div>
+            <div className="mt-8 grid gap-4 md:grid-cols-3">
+              {organicBlocks.map((item) => (
+                <Card key={item.title} className="border-border/70 bg-card/90">
+                  <CardHeader>
+                    <CardTitle className="text-xl">{item.title}</CardTitle>
+                  </CardHeader>
+                  <CardContent className="text-sm leading-7 text-muted-foreground">{item.description}</CardContent>
+                </Card>
+              ))}
+            </div>
           </div>
         </section>
 
-        <section id="lead-form" className="container grid gap-8 py-14 lg:grid-cols-[0.95fr_1.05fr] lg:py-20">
+        <section id="lead-form" className="container grid gap-8 py-12 lg:grid-cols-[0.9fr_1.1fr] lg:py-16">
           <div className="space-y-5">
             <p className="text-sm font-semibold uppercase tracking-[0.24em] text-primary">Lead capture</p>
-            <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">ส่งข้อมูลให้ทีมคัดกรองและติดตามใน CRM ได้ทันที</h2>
+            <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">หากยังไม่สมัครทันที ให้ทีมงานรับเรื่องและติดตามต่อได้เลย</h2>
             <p className="text-base leading-7 text-muted-foreground">
-              ฟอร์มนี้ไม่ใช่เพียงการเก็บชื่อ แต่เป็นชั้นรับข้อมูลที่บันทึก UTM, referrer และสัญญาณคุณภาพเบื้องต้น เพื่อให้ทีมงานรู้ว่าลีดนี้มาจากไหน ควรจัดอยู่ใน segment ไหน และควรติดตามด้วยวิธีใดต่อ
+              ฟอร์มนี้ทำหน้าที่เป็นชั้นรับลีดสำรองสำหรับผู้ที่สนใจแต่ยังไม่กดสมัครทันที ข้อมูลที่ส่งเข้ามาจะถูกเก็บพร้อม UTM, referrer และบริบทเบื้องต้น เพื่อให้ทีมงานรู้ว่าควรตามต่ออย่างไรและควรจัดลำดับความสำคัญแบบไหนใน CRM
             </p>
             <div className="space-y-3 rounded-3xl border border-primary/10 bg-primary/5 p-6">
               <div className="flex items-start gap-3">
                 <Wallet className="mt-1 h-5 w-5 text-primary" />
-                <p className="text-sm leading-6 text-muted-foreground">รองรับการเก็บข้อมูลสำหรับผู้เล่นที่ต้องการความเร็วในการสมัคร ความชัดเจนของข้อเสนอ และการติดตามโดยทีมเฉพาะทาง</p>
+                <p className="text-sm leading-6 text-muted-foreground">ช่วยรักษาทราฟฟิกที่ยังไม่พร้อมสมัครทันทีไม่ให้หลุดหายจากระบบ</p>
               </div>
               <div className="flex items-start gap-3">
                 <Crown className="mt-1 h-5 w-5 text-primary" />
-                <p className="text-sm leading-6 text-muted-foreground">ลีดที่มี intent สูงจะถูกตั้งต้นคะแนนเป็นกลุ่มศักยภาพสูงเพื่อให้ทีม CRM เห็นก่อนและสามารถบันทึก follow-up notes ต่อได้</p>
+                <p className="text-sm leading-6 text-muted-foreground">เปิดทางให้ทีมคัดกลุ่มผู้เล่นมูลค่าสูงและติดตามต่อด้วยโน้ตหรือ workflow เฉพาะทาง</p>
               </div>
             </div>
           </div>
@@ -327,36 +382,57 @@ export default function Home() {
           <Card className="border-border/70 bg-card shadow-lg">
             <CardHeader>
               <CardTitle>แบบฟอร์มรับลีดพร้อมติดตามแคมเปญ</CardTitle>
-              <CardDescription>กรอกข้อมูลสั้น ๆ เพื่อให้ระบบบันทึก lead พร้อมแหล่งที่มาของแคมเปญโดยอัตโนมัติ</CardDescription>
+              <CardDescription>กรอกข้อมูลสั้น ๆ เพื่อให้ระบบบันทึก lead และบริบทของแคมเปญโดยอัตโนมัติ</CardDescription>
             </CardHeader>
             <CardContent>
               <form className="space-y-5" onSubmit={handleSubmit}>
                 <div className="grid gap-5 sm:grid-cols-2">
                   <div className="space-y-2">
                     <Label htmlFor="fullName">ชื่อที่ใช้ติดต่อ</Label>
-                    <Input id="fullName" value={form.fullName} onChange={(e) => setForm((prev) => ({ ...prev, fullName: e.target.value }))} placeholder="ชื่อหรือนามแฝง" />
+                    <Input
+                      id="fullName"
+                      value={form.fullName}
+                      onChange={(e) => setForm((prev) => ({ ...prev, fullName: e.target.value }))}
+                      placeholder="ชื่อหรือนามแฝง"
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="phone">เบอร์โทรหรือช่องทางหลัก</Label>
-                    <Input id="phone" value={form.phone} onChange={(e) => setForm((prev) => ({ ...prev, phone: e.target.value }))} placeholder="เบอร์โทรศัพท์" />
+                    <Input
+                      id="phone"
+                      value={form.phone}
+                      onChange={(e) => setForm((prev) => ({ ...prev, phone: e.target.value }))}
+                      placeholder="เบอร์โทรศัพท์"
+                    />
                   </div>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="lineId">LINE ID</Label>
-                  <Input id="lineId" value={form.lineId} onChange={(e) => setForm((prev) => ({ ...prev, lineId: e.target.value }))} placeholder="Line ID สำหรับติดต่อกลับ" />
+                  <Input
+                    id="lineId"
+                    value={form.lineId}
+                    onChange={(e) => setForm((prev) => ({ ...prev, lineId: e.target.value }))}
+                    placeholder="Line ID สำหรับติดต่อกลับ"
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="notes">ความสนใจหรือความต้องการ</Label>
-                  <Textarea id="notes" value={form.notes} onChange={(e) => setForm((prev) => ({ ...prev, notes: e.target.value }))} placeholder="เช่น สนใจหวยรัฐบาล โปรโมชั่นเครดิตฟรี หรือระบบแนะนำเพื่อน" className="min-h-28" />
+                  <Textarea
+                    id="notes"
+                    value={form.notes}
+                    onChange={(e) => setForm((prev) => ({ ...prev, notes: e.target.value }))}
+                    placeholder="เช่น สนใจหวยจ่ายสูง โปรโมชั่น หรือระบบแนะนำเพื่อน"
+                    className="min-h-28"
+                  />
                 </div>
 
                 <div className="rounded-2xl border border-dashed border-primary/20 bg-primary/5 p-4 text-sm leading-6 text-muted-foreground">
-                  ระบบจะบันทึกข้อมูลแคมเปญให้อัตโนมัติ เช่น <span className="font-medium text-foreground">utm_source</span>, <span className="font-medium text-foreground">utm_medium</span>, referrer และชนิดอุปกรณ์ เพื่อใช้ต่อใน dashboard และ CRM
+                  ระบบจะบันทึกข้อมูลแคมเปญอัตโนมัติ เช่น <span className="font-medium text-foreground">utm_source</span>, <span className="font-medium text-foreground">utm_medium</span>, referrer และชนิดอุปกรณ์ เพื่อให้ทีมดูผลต่อใน Dashboard และ CRM ได้ทันที
                 </div>
 
                 <div className="flex flex-col gap-3 sm:flex-row">
                   <Button type="submit" className="h-11 flex-1" disabled={submitLead.isPending}>
-                    {submitLead.isPending ? "กำลังบันทึก lead..." : "บันทึก lead เข้าระบบ"}
+                    {submitLead.isPending ? "กำลังบันทึก lead..." : "ส่งข้อมูลให้ทีมงาน"}
                   </Button>
                   <Button asChild type="button" variant="outline" className="h-11 flex-1 border-primary/20">
                     <a href={registrationUrl} target="_blank" rel="noreferrer">
@@ -389,11 +465,11 @@ export default function Home() {
         <div className="container flex items-center gap-3">
           <Button asChild className="h-11 flex-1 rounded-full shadow-lg shadow-primary/20">
             <a href={registrationUrl} target="_blank" rel="noreferrer">
-              สมัครใช้งานทันที
+              สมัครทันที
             </a>
           </Button>
           <Button asChild variant="outline" className="h-11 flex-1 rounded-full border-primary/20 bg-background">
-            <a href="#lead-form">ส่งข้อมูลให้ทีมติดต่อ</a>
+            <a href="#lead-form">ให้ทีมงานติดต่อ</a>
           </Button>
         </div>
       </div>

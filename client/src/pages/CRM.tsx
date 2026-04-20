@@ -20,6 +20,10 @@ export default function CRMPage() {
     { leadId: selectedLeadId ?? 0 },
     { enabled: selectedLeadId !== null },
   );
+  const depositsQuery = trpc.crm.depositsByLead.useQuery(
+    { leadId: selectedLeadId ?? 0 },
+    { enabled: selectedLeadId !== null },
+  );
 
   const addNote = trpc.crm.addNote.useMutation({
     onSuccess: async () => {
@@ -168,7 +172,7 @@ export default function CRMPage() {
           </Card>
         </section>
 
-        <section className="grid gap-4 xl:grid-cols-[0.95fr_1.05fr]">
+        <section className="grid gap-4 xl:grid-cols-[0.95fr_1.05fr_0.95fr]">
           <Card className="border-border/70 bg-card/90">
             <CardHeader>
               <CardTitle className="flex items-center gap-3"><NotebookPen className="h-5 w-5 text-primary" /> CRM note timeline</CardTitle>
@@ -205,6 +209,41 @@ export default function CRMPage() {
           </Card>
 
           <Card className="border-border/70 bg-card/90">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-3"><Sparkles className="h-5 w-5 text-primary" /> Deposit history</CardTitle>
+              <CardDescription>ประวัติการฝากของ lead ที่เลือกเพื่อใช้ประเมินมูลค่าและจังหวะ follow-up</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {selectedLeadId === null ? (
+                <div className="rounded-2xl border border-dashed border-border p-6 text-sm leading-7 text-muted-foreground">
+                  เลือก lead ก่อน แล้วระบบจะแสดงประวัติการฝากที่เชื่อมกับ customer profile ให้ทันที
+                </div>
+              ) : depositsQuery.data && depositsQuery.data.length > 0 ? (
+                depositsQuery.data.map((deposit) => (
+                  <div key={deposit.id} className="rounded-2xl border border-border/70 p-4">
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <p className="text-sm font-medium">{deposit.depositType}</p>
+                        <p className="mt-1 text-xs uppercase tracking-[0.18em] text-muted-foreground">
+                          {new Date(deposit.occurredAt).toLocaleString()}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Amount</p>
+                        <p className="mt-1 text-sm font-semibold">฿{Number(deposit.amount ?? 0).toLocaleString()}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="rounded-2xl border border-dashed border-border p-6 text-sm leading-7 text-muted-foreground">
+                  ยังไม่มีประวัติการฝากสำหรับ lead นี้ แต่โครงสร้าง CRM พร้อมเชื่อมยอดฝากจริงทันทีเมื่อข้อมูลถูกบันทึกเข้าระบบ
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card className="border-border/70 bg-card/90 xl:col-span-1">
             <CardHeader>
               <CardTitle className="flex items-center gap-3"><Sparkles className="h-5 w-5 text-primary" /> Whale handling principles</CardTitle>
               <CardDescription>แนวทางใช้งาน CRM เพื่อให้ระบบช่วยขยายมูลค่าต่อรายได้จริง</CardDescription>

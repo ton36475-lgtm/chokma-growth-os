@@ -8,10 +8,12 @@ import {
   createLead,
   createLeadEvent,
   createOrUpdateCustomerProfile,
+  getCampaignPerformance,
   getDashboardSnapshot,
   listAutomationRuns,
   listBroadcastQueues,
   listCampaigns,
+  listDepositEventsForLead,
   listRecentLeads,
   listVipNotesForLead,
   listWhaleProfiles,
@@ -154,6 +156,9 @@ export const appRouter = router({
     snapshot: protectedProcedure.query(async () => {
       return getDashboardSnapshot();
     }),
+    campaignPerformance: protectedProcedure.query(async () => {
+      return getCampaignPerformance();
+    }),
     actualVsResult: protectedProcedure.query(async () => {
       const snapshot = await getDashboardSnapshot();
       const automationRuns = await listAutomationRuns(10);
@@ -202,6 +207,11 @@ export const appRouter = router({
       .input(z.object({ leadId: z.number().int().positive() }))
       .query(async ({ input }) => {
         return listVipNotesForLead(input.leadId);
+      }),
+    depositsByLead: protectedProcedure
+      .input(z.object({ leadId: z.number().int().positive() }))
+      .query(async ({ input }) => {
+        return listDepositEventsForLead(input.leadId);
       }),
   }),
   operations: router({

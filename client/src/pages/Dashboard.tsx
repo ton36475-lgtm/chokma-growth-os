@@ -33,12 +33,14 @@ function StatCard({
 }
 
 export default function DashboardPage() {
-  const snapshot = trpc.dashboard.snapshot.useQuery();
-  const actualVsResult = trpc.dashboard.actualVsResult.useQuery();
-  const recentLeads = trpc.leads.recent.useQuery();
-  const campaigns = trpc.campaigns.list.useQuery();
+  const refreshInterval = 10000;
+  const snapshot = trpc.dashboard.snapshot.useQuery(undefined, { refetchInterval: refreshInterval });
+  const actualVsResult = trpc.dashboard.actualVsResult.useQuery(undefined, { refetchInterval: refreshInterval });
+  const recentLeads = trpc.leads.recent.useQuery(undefined, { refetchInterval: refreshInterval });
+  const campaignPerformance = trpc.dashboard.campaignPerformance.useQuery(undefined, { refetchInterval: refreshInterval });
 
   const data = snapshot.data;
+  const campaignMetrics = campaignPerformance.data ?? [];
 
   return (
     <DashboardLayout>
@@ -100,11 +102,11 @@ export default function DashboardPage() {
           <Card className="border-border/70 bg-card/90">
             <CardHeader>
               <CardTitle>ภาพรวมแคมเปญที่ระบบมองเห็น</CardTitle>
-              <CardDescription>ใช้เปรียบเทียบความพร้อมของ campaign, landing path และสถานะการใช้งานจริง</CardDescription>
+              <CardDescription>ใช้เปรียบเทียบความพร้อมของ campaign, landing path, matched leads, converted leads และ estimated CPA แบบอัปเดตอัตโนมัติทุก 10 วินาที</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
-              {campaigns.data && campaigns.data.length > 0 ? (
-                campaigns.data.map((campaign) => (
+              {campaignMetrics.length > 0 ? (
+                campaignMetrics.map((campaign) => (
                   <div key={campaign.id} className="rounded-2xl border border-border/70 p-4">
                     <div className="flex items-start justify-between gap-4">
                       <div>
@@ -115,7 +117,7 @@ export default function DashboardPage() {
                         {campaign.status}
                       </div>
                     </div>
-                    <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                    <div className="mt-4 grid gap-3 sm:grid-cols-3 xl:grid-cols-6">
                       <div>
                         <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Channel</p>
                         <p className="mt-1 text-sm font-medium">{campaign.channel}</p>
@@ -127,6 +129,22 @@ export default function DashboardPage() {
                       <div>
                         <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Landing path</p>
                         <p className="mt-1 text-sm font-medium">{campaign.landingPath || "/"}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Matched leads</p>
+                        <p className="mt-1 text-sm font-medium">{campaign.leadCount}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Converted leads</p>
+                        <p className="mt-1 text-sm font-medium">{campaign.convertedCount}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Estimated CPA</p>
+                        <p className="mt-1 text-sm font-medium">{campaign.estimatedCpa > 0 ? `฿${campaign.estimatedCpa.toFixed(0)}` : "รอ lead"}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">ROI</p>
+                        <p className="mt-1 text-sm font-medium">{Number(campaign.roi ?? 0).toFixed(1)}%</p>
                       </div>
                     </div>
                   </div>

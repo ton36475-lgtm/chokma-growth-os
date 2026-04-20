@@ -237,6 +237,17 @@ export async function createDepositEvent(input: InsertDepositEvent) {
   return extractInsertId(result);
 }
 
+export async function listDepositEventsForLead(leadId: number) {
+  const db = await getDb();
+  if (!db) return [];
+
+  return db
+    .select()
+    .from(depositEvents)
+    .where(eq(depositEvents.leadId, leadId))
+    .orderBy(desc(depositEvents.occurredAt), desc(depositEvents.createdAt));
+}
+
 export async function createAutomationRun(input: InsertAutomationRun) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
@@ -265,6 +276,59 @@ export async function listBroadcastQueues(limit = 20) {
   if (!db) return [];
 
   return db.select().from(broadcastQueues).orderBy(desc(broadcastQueues.createdAt)).limit(limit);
+}
+
+export async function getCampaignPerformance() {
+  const db = await getDb();
+  if (!db) return [];
+
+  const rows = await db
+    .select({
+      id: campaigns.id,
+      name: campaigns.name,
+      objective: campaigns.objective,
+      channel: campaigns.channel,
+      status: campaigns.status,
+      landingPath: campaigns.landingPath,
+      spend: campaigns.spend,
+      leadCount: sql<number>`(
+        select count(*)
+        from ${leads}
+        where ${leads.campaignId} = ${campaigns.id}
+      )`,
+      convertedCount: sql<number>`(
+        select count(*)
+        from ${leads}
+        where ${leads.campaignId} = ${campaigns.id}
+          and ${leads.leadStatus} = 'converted'
+      )`,
+      totalDeposits: sql<number>`(
+        select coalesce(sum(${depositEvents.amount}), 0)
+        from ${depositEvents}
+        where ${depositEvents.campaignId} = ${campaigns.id}
+      )`,
+    })
+    .from(campaigns)
+    .orderBy(desc(campaigns.createdAt));
+
+  return rows.map((row) => {
+    const spend = Number(row.spend ?? 0);
+    const leadCount = Number(row.leadCount ?? 0);
+    const convertedCount = Number(row.convertedCount ?? 0);
+    const totalDeposits = Number(row.totalDeposits ?? 0);
+    const estimatedCpa = leadCount > 0 ? spend / leadCount : 0;
+    const roi = spend > 0 ? ((totalDeposits - spend) / spend) * 100 : 0;
+
+    return {
+      ...row,
+      spend,
+      leadCount,
+      convertedCount,
+      totalDeposits,
+      estimatedCpa,
+      roi,
+    };
+  });
 }
 
 export async function getDashboardSnapshot() {

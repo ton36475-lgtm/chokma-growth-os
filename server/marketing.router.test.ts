@@ -1,3 +1,4 @@
+import { TRPCError } from "@trpc/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { TrpcContext } from "./_core/context";
 
@@ -6,7 +7,9 @@ const dbMocks = vi.hoisted(() => ({
   createLead: vi.fn(),
   createLeadEvent: vi.fn(),
   createOrUpdateCustomerProfile: vi.fn(),
+  getCampaignPerformance: vi.fn(),
   getDashboardSnapshot: vi.fn(),
+  listDepositEventsForLead: vi.fn(),
   listAutomationRuns: vi.fn(),
   listBroadcastQueues: vi.fn(),
   listCampaigns: vi.fn(),
@@ -101,6 +104,73 @@ describe("marketing router", () => {
         segmentLabel: "High Intent Whale Prospect",
       }),
     );
+  });
+
+  it("returns per-campaign analytics for dashboard ROI and CPA cards", async () => {
+    dbMocks.getCampaignPerformance.mockResolvedValue([
+      {
+        id: 7,
+        name: "CHOKMA Whale Meta",
+        objective: "Lead acquisition",
+        channel: "meta",
+        status: "active",
+        landingPath: "/",
+        spend: 12000,
+        leadCount: 24,
+        convertedCount: 6,
+        totalDeposits: 46000,
+        estimatedCpa: 500,
+        roi: 283.3,
+      },
+    ]);
+
+    const caller = appRouter.createCaller(createContext(createUser()));
+
+    const result = await caller.dashboard.campaignPerformance();
+
+    expect(dbMocks.getCampaignPerformance).toHaveBeenCalledTimes(1);
+    expect(result).toEqual([
+      expect.objectContaining({
+        name: "CHOKMA Whale Meta",
+        estimatedCpa: 500,
+        roi: 283.3,
+      }),
+    ]);
+  });
+
+  it("returns deposit history for a selected lead in crm", async () => {
+    dbMocks.listDepositEventsForLead.mockResolvedValue([
+      {
+        id: 31,
+        leadId: 44,
+        campaignId: 7,
+        depositType: "first",
+        amount: "3500.00",
+        occurredAt: new Date("2026-04-20T10:00:00Z"),
+        createdAt: new Date("2026-04-20T10:05:00Z"),
+      },
+    ]);
+
+    const caller = appRouter.createCaller(createContext(createUser()));
+
+    const result = await caller.crm.depositsByLead({ leadId: 44 });
+
+    expect(dbMocks.listDepositEventsForLead).toHaveBeenCalledWith(44);
+    expect(result).toEqual([
+      expect.objectContaining({
+        leadId: 44,
+        depositType: "first",
+        amount: "3500.00",
+      }),
+    ]);
+  });
+
+  it("rejects protected dashboard access when the user is not authenticated", async () => {
+    const caller = appRouter.createCaller(createContext());
+
+    await expect(caller.dashboard.snapshot()).rejects.toMatchObject<Partial<TRPCError>>({
+      code: "UNAUTHORIZED",
+    });
   });
 
   it("builds actual-versus-result dashboard data from snapshot and automation runs", async () => {
