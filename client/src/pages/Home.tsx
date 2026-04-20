@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { getLoginUrl } from "@/const";
 import { trpc } from "@/lib/trpc";
-import { ArrowRight, BadgePercent, Crown, ShieldCheck, Wallet } from "lucide-react";
+import { ArrowRight, BadgePercent, Crown, Gift, Landmark, ShieldCheck, Sparkles, Wallet } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
@@ -31,6 +31,29 @@ const trustRows = [
   "สมัครง่าย เริ่มจากกรอกเบอร์มือถือในหน้าสมัครจริงของ CHOKMA โดยตรง",
   "หน้า Landing นี้เก็บ UTM, referrer และสัญญาณทราฟฟิกเพื่อต่อเข้า CRM กับ Dashboard อัตโนมัติ",
   "ทีมงานสามารถติดตามลูกค้าคุณภาพสูงต่อใน CRM พร้อมดู deposit history และ actual versus result ได้",
+];
+
+const extraOffers = [
+  {
+    title: "รางวัลหวยรัฐบาลและเลขจ่ายหนัก",
+    description: "เสริมข้อเสนอหลักด้วยมุมสื่อสารที่ตอบคนชอบอัตราจ่ายสูงและรางวัลที่เห็นภาพได้ทันที",
+    icon: Landmark,
+  },
+  {
+    title: "เครดิตฟรี พร้อมข้อเสนอสล็อตและคาสิโน",
+    description: "ใช้เป็นแรงดึงดูดเสริมสำหรับกลุ่มที่สนใจความคุ้มค่าและมองหาประสบการณ์เล่นที่หลากหลาย",
+    icon: Gift,
+  },
+  {
+    title: "ระบบแนะนำเพื่อนต่อยอดได้ถึง 3%",
+    description: "ชู referral เป็น hook ทางธุรกิจที่ต่อยอดได้ทั้ง acquisition และ affiliate-style dashboard ในเฟสถัดไป",
+    icon: BadgePercent,
+  },
+  {
+    title: "ฝากถอนสะดวกผ่านช่องทางที่คุ้นเคย",
+    description: "ลดแรงเสียดทานของ conversion ด้วยข้อความที่ทำให้ผู้ใช้เข้าใจว่าการทำรายการหลังสมัครไม่ซับซ้อน",
+    icon: Sparkles,
+  },
 ];
 
 const organicBlocks = [
@@ -69,8 +92,8 @@ const faqItems = [
 export default function Home() {
   const { user, isAuthenticated } = useAuth();
   const submitLead = trpc.leads.submit.useMutation({
-    onSuccess: () => {
-      toast.success("บันทึกข้อมูลเรียบร้อยแล้ว ทีมงานสามารถติดตาม lead นี้ต่อใน CRM ได้ทันที");
+    onSuccess: (result) => {
+      toast.success(`บันทึกข้อมูลเรียบร้อยแล้ว • คะแนนคุณภาพ ${result.qualityScore}/100 • สถานะ ${result.trafficStatus}`);
       setForm((prev) => ({ ...prev, fullName: "", phone: "", lineId: "", notes: "" }));
     },
     onError: (error) => {
@@ -149,25 +172,58 @@ export default function Home() {
     ensureLink("canonical", canonical);
   }, []);
 
-  const structuredData = useMemo(
-    () => ({
-      "@context": "https://schema.org",
-      "@type": "WebPage",
-      name: "CHOKMA Landing Page",
-      description:
-        "หน้า Landing Page ของ CHOKMA ที่ออกแบบเพื่อ conversion สูง พร้อมเก็บ lead, UTM tracking, CRM integration และ organic intent content สำหรับกลุ่มเว็บหวยจ่ายสูง",
-      url: typeof window !== "undefined" ? window.location.href : "https://xn--42cl4e4cwd.net",
-      mainEntity: faqItems.map((item) => ({
-        "@type": "Question",
-        name: item.q,
-        acceptedAnswer: {
-          "@type": "Answer",
-          text: item.a,
+  const structuredData = useMemo(() => {
+    const siteUrl = typeof window !== "undefined" ? window.location.origin : "https://xn--42cl4e4cwd.net";
+    const pageUrl = typeof window !== "undefined" ? window.location.href : "https://xn--42cl4e4cwd.net";
+
+    return [
+      {
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        name: "CHOKMA",
+        url: "https://xn--42cl4e4cwd.net",
+        logo: `${siteUrl}/favicon.ico`,
+        sameAs: [registrationUrl],
+        description: "CHOKMA เป็นระบบหน้า Landing และโครงสร้างติดตามผลสำหรับแคมเปญสมัครสมาชิกที่เชื่อมกับ CRM และ Dashboard หลังบ้าน",
+      },
+      {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        name: "CHOKMA",
+        url: siteUrl,
+        inLanguage: "th-TH",
+        publisher: {
+          "@type": "Organization",
+          name: "CHOKMA",
         },
-      })),
-    }),
-    [],
-  );
+      },
+      {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        mainEntity: faqItems.map((item) => ({
+          "@type": "Question",
+          name: item.q,
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: item.a,
+          },
+        })),
+      },
+      {
+        "@context": "https://schema.org",
+        "@type": "WebPage",
+        name: "CHOKMA Landing Page",
+        description:
+          "หน้า Landing Page ของ CHOKMA ที่ออกแบบเพื่อ conversion สูง พร้อมเก็บ lead, UTM tracking, CRM integration และ organic intent content สำหรับกลุ่มเว็บหวยจ่ายสูง",
+        url: pageUrl,
+        isPartOf: {
+          "@type": "WebSite",
+          name: "CHOKMA",
+          url: siteUrl,
+        },
+      },
+    ];
+  }, []);
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -185,7 +241,6 @@ export default function Home() {
       referrer: form.referrer || undefined,
       deviceType: form.deviceType,
       primaryIntent: "high-value lottery prospect",
-      predictedValueScore: 85,
       sourceType: form.utmSource ? "ad" : "manual",
     });
   };
@@ -336,6 +391,21 @@ export default function Home() {
               </Card>
             ))}
           </div>
+          <div className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            {extraOffers.map((offer) => {
+              const Icon = offer.icon;
+              return (
+                <Card key={offer.title} className="border-border/70 bg-card/90">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-3 text-lg"><Icon className="h-5 w-5 text-primary" /> {offer.title}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm leading-7 text-muted-foreground">{offer.description}</p>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
         </section>
 
         <section className="border-y border-border/60 bg-muted/35">
@@ -427,7 +497,7 @@ export default function Home() {
                 </div>
 
                 <div className="rounded-2xl border border-dashed border-primary/20 bg-primary/5 p-4 text-sm leading-6 text-muted-foreground">
-                  ระบบจะบันทึกข้อมูลแคมเปญอัตโนมัติ เช่น <span className="font-medium text-foreground">utm_source</span>, <span className="font-medium text-foreground">utm_medium</span>, referrer และชนิดอุปกรณ์ เพื่อให้ทีมดูผลต่อใน Dashboard และ CRM ได้ทันที
+                  ระบบจะบันทึกข้อมูลแคมเปญอัตโนมัติ เช่น <span className="font-medium text-foreground">utm_source</span>, <span className="font-medium text-foreground">utm_medium</span>, referrer และชนิดอุปกรณ์ พร้อมประเมินคะแนนคุณภาพทราฟฟิกแบบโปร่งใสจากข้อมูลที่ส่งเข้าจริง เพื่อให้ทีมดูผลต่อใน Dashboard และ CRM ได้ทันที
                 </div>
 
                 <div className="flex flex-col gap-3 sm:flex-row">

@@ -7,31 +7,34 @@
 - [x] ออกแบบระบบ CRM สำหรับแบ่งกลุ่มลูกค้าปลาวาฬ พร้อมประวัติการฝาก ระดับ VIP และ Follow-up Notes
 - [x] ออกแบบฟอร์มสมัคร Lead พร้อม UTM Tracking อัตโนมัติและการเก็บแหล่งที่มาแคมเปญ
 - [x] วางสถาปัตยกรรมข้อมูลและฐานข้อมูลให้แต่ละโมดูลสร้างมูลค่าได้ทันทีเมื่อพัฒนาเสร็จ
-- [ ] วางแนวทางเชื่อมต่อและย้ายงานจาก Manual Broadcast ปัจจุบันไปสู่ Broadcast automation ที่ต่อยอดได้
+- [x] วางแนวทางเชื่อมต่อและย้ายงานจาก Manual Broadcast ปัจจุบันไปสู่ Broadcast automation ที่ต่อยอดได้
 - [x] พัฒนา backend contract และ workflow สำหรับ lead intake, CRM, analytics และ campaign attribution
 - [x] พัฒนา UI ของ Landing Page, Dashboard และ CRM ให้ใช้งานจริงได้ในระบบเดียว
 - [x] เพิ่ม unit tests ด้วย vitest สำหรับ logic สำคัญของ lead tracking, segmentation และ analytics calculations
-- [ ] ทดสอบระบบแบบ end-to-end ในระดับฟีเจอร์หลักก่อนส่งมอบ
-- [ ] จัดทำเอกสารการใช้งาน ระบบ migration และขั้นตอนเปิดใช้งานจริง
-- [ ] เพิ่ม USP ใหม่จากไฟล์แนบลงใน Landing Page ได้แก่ ระบบแนะนำเพื่อน 3%, รางวัลหวยรัฐบาล, โปรโมชั่นเครดิตฟรี, ข้อเสนอสล็อต/คาสิโน และช่องทางฝากถอน
+- [x] ทดสอบระบบแบบ end-to-end ในระดับฟีเจอร์หลักก่อนส่งมอบ
+- [x] จัดทำเอกสารการใช้งาน ระบบ migration และขั้นตอนเปิดใช้งานจริง
+- [x] เพิ่ม USP ใหม่จากไฟล์แนบลงใน Landing Page ได้แก่ ระบบแนะนำเพื่อน 3%, รางวัลหวยรัฐบาล, โปรโมชั่นเครดิตฟรี, ข้อเสนอสล็อต/คาสิโน และช่องทางฝากถอน
 - [x] ปรับ Landing Page ให้มี Hero copy, sticky CTA และ trust/social proof ตาม requirement ล่าสุดจากไฟล์แนบ
-- [ ] พิจารณาแนวทาง affiliate tracking และการต่อยอด referral dashboard จาก requirement ล่าสุด
+- [x] พิจารณาแนวทาง affiliate tracking และการต่อยอด referral dashboard จาก requirement ล่าสุด
 - [x] ออกแบบ content block สำหรับ SEO/AEO ที่รองรับ organic traffic แนวเลขเด็ดและคำค้นที่เกี่ยวข้อง
 - [x] บันทึก migration path สำหรับ Broadpung/manual broadcast ให้สอดคล้องกับ requirement ล่าสุด
 - [x] เพิ่ม SEO/AEO implementation ให้ครบใน Landing Page เช่น title, meta description, canonical, Open Graph และ content block สำหรับ organic intent
 - [x] ทำ Dashboard ให้เป็น real-time จริงด้วย polling หรือ refetch interval และเพิ่ม metric ระดับต่อแคมเปญสำหรับ ROI/CPA
 - [x] เพิ่ม CRM deposit history ราย lead พร้อม UI แสดงประวัติการฝากและเชื่อมกับ customer profile
-- [ ] ทดสอบ success/error paths ของ route และฟีเจอร์หลักให้ครอบคลุมระดับ production
+- [x] ทดสอบ success/error paths ของ route และฟีเจอร์หลักให้ครอบคลุมระดับ production
 - [x] สรุปสาระสำคัญจากไฟล์แนบล่าสุดและแปลงเป็น requirement ที่นำไปใช้ได้จริง
 - [x] นำประเด็นสำคัญจากไฟล์แนบไปปรับ Landing Page ให้ชัดขึ้นทั้งด้านข้อความ ข้อเสนอ และ conversion flow
 - [x] นำประเด็นสำคัญจากไฟล์แนบไปปรับ CRM หรือ logic การติดตามลูกค้าให้สอดคล้องกับการใช้งานจริง
 - [x] บังคับใช้กฎแบรนด์ CHOKMA เท่านั้นในทุกหน้าและทุกข้อความ พร้อมโทนสีน้ำเงิน-ทองอย่างสม่ำเสมอ
 - [x] เพิ่มข้อเสนอหลักในหน้า Landing Page ได้แก่ หวย 4 ตัว 7,000 บาท, 3 ตัว 1,200 บาท และระบบแนะนำเพื่อนแบบขั้นบันได 1% ถึง 3%
 - [x] ปรับ Landing Page ให้มี sticky CTA ที่ชี้ไปยังลิงก์สมัครหลักของ CHOKMA โดยตรง
-- [ ] ออกแบบชั้นตรวจคุณภาพทราฟฟิกสำหรับ analytics และ lead scoring แบบโปร่งใส โดยไม่ใช้การปลอมหน้าหรือหลบการตรวจจับ
-- [ ] พิจารณาเพิ่มระบบแจ้งเตือนฝั่งปฏิบัติการเมื่อทรัพยากรระบบหรือกระบวนการสำคัญมีความเสี่ยงหยุดชะงัก โดยใช้แนวทางที่ปลอดภัยและตรวจสอบได้
+- [x] ออกแบบชั้นตรวจคุณภาพทราฟฟิกสำหรับ analytics และ lead scoring แบบโปร่งใส โดยไม่ใช้การปลอมหน้าหรือหลบการตรวจจับ
+- [x] พิจารณาเพิ่มระบบแจ้งเตือนฝั่งปฏิบัติการเมื่อทรัพยากรระบบหรือกระบวนการสำคัญมีความเสี่ยงหยุดชะงัก โดยใช้แนวทางที่ปลอดภัยและตรวจสอบได้
 - [x] วิเคราะห์หน้าอ้างอิง hi99s.co/sms และ hi99.pro เพื่อสกัดรูปแบบหน้าแบบง่ายและจบไวที่ผู้ใช้ต้องการ
 - [x] ปรับ Landing Page ให้ลดความซับซ้อนของข้อความและโครงสร้าง โดยเน้นข้อเสนอหลัก ปุ่มสมัคร และเส้นทาง conversion ที่สั้นลง
 - [x] นำรูปแบบ social proof, hero copy และ CTA จากหน้าอ้างอิงมาปรับใช้กับแบรนด์ CHOKMA โดยไม่คัดลอกตรง
 - [x] ทดสอบว่าหน้าแบบใหม่ยังเชื่อม lead intake, UTM tracking และ CRM integration ได้ครบ
 - [x] ใช้โดเมนและลิงก์สมัครจริง https://โชคมา.net/auth/registration?af=u2vZe3xLLiJ7 เป็นปลายทางหลักของ CTA, sticky CTA และ registration flow ทั้งหน้า Landing Page
+- [x] ทำ Dashboard ให้แสดง Actual vs Result comparison แบบอ่านง่ายขึ้น ทั้งระดับสรุปและรายการ automation run
+- [x] เพิ่ม Structured Data (JSON-LD) สำหรับ Organization และ WebSite schema ในหน้า Landing Page
+- [x] เพิ่มระบบแจ้งเตือนเจ้าของระบบอัตโนมัติเมื่อมี lead ใหม่หรือ lead คุณภาพสูงเข้าสู่ระบบ

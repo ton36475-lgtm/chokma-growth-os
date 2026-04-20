@@ -5,6 +5,7 @@ import { systemRouter } from "./_core/systemRouter";
 import { adminProcedure, protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import {
   addVipNote,
+  createAutomationRun,
   createLead,
   createLeadEvent,
   createOrUpdateCustomerProfile,
@@ -19,6 +20,8 @@ import {
   listWhaleProfiles,
   updateLeadStatus,
 } from "./db";
+import { assessLeadQuality } from "./leadQuality";
+import { notifyOwner } from "./_core/notification";
 
 const leadInputSchema = z.object({
   fullName: z.string().min(1).max(160).optional(),
@@ -79,13 +82,11 @@ export const appRouter = router({
   }),
   leads: router({
     submit: publicProcedure.input(leadInputSchema).mutation(async ({ input }) => {
-      const leadId = await createLead({
-        campaignId: input.campaignId,
+      const quality = assessLeadQuality({
         fullName: input.fullName,
         phone: input.phone,
         lineId: input.lineId,
         telegramHandle: input.telegramHandle,
-        sourceType: input.sourceType,
         landingPage: input.landingPage,
         referrer: input.referrer,
         deviceType: input.deviceType,
@@ -95,7 +96,28 @@ export const appRouter = router({
         utmContent: input.utmContent,
         utmTerm: input.utmTerm,
         primaryIntent: input.primaryIntent,
-        predictedValueScore: input.predictedValueScore?.toFixed(2) ?? "0.00",
+        notes: input.notes,
+        sourceType: input.sourceType,
+      });
+
+      const leadId = await createLead({
+        campaignId: input.campaignId,
+        fullName: input.fullName,
+        phone: input.phone,
+        lineId: input.lineId,
+        telegramHandle: input.telegramHandle,
+        sourceType: input.sourceType,
+        vipTier: quality.vipTier,
+        landingPage: input.landingPage,
+        referrer: input.referrer,
+        deviceType: input.deviceType,
+        utmSource: input.utmSource,
+        utmMedium: input.utmMedium,
+        utmCampaign: input.utmCampaign,
+        utmContent: input.utmContent,
+        utmTerm: input.utmTerm,
+        primaryIntent: input.primaryIntent,
+        predictedValueScore: quality.score.toFixed(2),
         notes: input.notes,
       });
 
@@ -113,22 +135,64 @@ export const appRouter = router({
           utmContent: input.utmContent ?? null,
           utmTerm: input.utmTerm ?? null,
           deviceType: input.deviceType,
+          qualityScore: quality.score,
+          trafficStatus: quality.trafficStatus,
+          riskFlags: quality.riskFlags,
+          reasons: quality.reasons,
+        }),
+      });
+
+      await createLeadEvent({
+        leadId,
+        campaignId: input.campaignId,
+        eventType: "ai_action",
+        eventSource: "ai",
+        metadata: JSON.stringify({
+          module: "lead_scoring",
+          qualityScore: quality.score,
+          trafficStatus: quality.trafficStatus,
+          segmentLabel: quality.segmentLabel,
+          riskFlags: quality.riskFlags,
+          reasons: quality.reasons,
         }),
       });
 
       await createOrUpdateCustomerProfile({
         leadId,
-        vipLevel: input.predictedValueScore && input.predictedValueScore >= 80 ? "whale" : "prospect",
+        vipLevel: quality.vipLevel,
         cumulativeDeposit: "0.00",
         lifetimeRevenue: "0.00",
-        followUpStatus: "pending",
-        affordabilityBand: input.predictedValueScore && input.predictedValueScore >= 80 ? "whale" : "unknown",
-        segmentLabel: input.predictedValueScore && input.predictedValueScore >= 80 ? "High Intent Whale Prospect" : "New Lead",
+        followUpStatus: quality.trafficStatus === "suspicious" ? "nurturing" : "pending",
+        affordabilityBand: quality.affordabilityBand,
+        segmentLabel: quality.segmentLabel,
+      });
+
+      const notificationDelivered = await notifyOwner({
+        title: quality.notificationTitle,
+        content: quality.notificationContent,
+      });
+
+      await createAutomationRun({
+        module: "lead_scoring",
+        status: notificationDelivered && quality.trafficStatus !== "suspicious" ? "completed" : "review_required",
+        targetEntityType: "lead",
+        targetEntityId: leadId,
+        plannedActions: 1,
+        actualActions: 1,
+        expectedResult: quality.expectedResult,
+        actualResult: `${quality.actualResult} • owner notification ${notificationDelivered ? "sent" : "failed"}`,
+        reviewNotes: notificationDelivered ? quality.reviewNotes : [quality.reviewNotes, "owner_notification_failed"].filter(Boolean).join(" | "),
+        startedAt: new Date(),
+        finishedAt: new Date(),
       });
 
       return {
         success: true,
         leadId,
+        qualityScore: quality.score,
+        trafficStatus: quality.trafficStatus,
+        vipTier: quality.vipTier,
+        notificationDelivered,
       } as const;
     }),
     recent: protectedProcedure.query(async () => {
@@ -165,6 +229,75 @@ export const appRouter = router({
       return {
         summary: snapshot,
         automationRuns,
+      };
+    }),
+    affiliateOverview: protectedProcedure.query(async () => {
+      const recentLeads = await listRecentLeads();
+      const campaignMetrics = await getCampaignPerformance();
+      const affiliateLeads = recentLeads.filter((lead) => {
+        const source = `${lead.sourceType ?? ""} ${lead.utmSource ?? ""} ${lead.utmCampaign ?? ""} ${lead.utmContent ?? ""}`.toLowerCase();
+        return source.includes("affiliate") || source.includes("refer");
+      });
+      const affiliateCampaigns = campaignMetrics.filter((campaign) => {
+        const source = `${campaign.channel ?? ""} ${campaign.name ?? ""} ${campaign.landingPath ?? ""}`.toLowerCase();
+        return source.includes("affiliate") || source.includes("refer");
+      });
+
+      return {
+        affiliateLeadCount: affiliateLeads.length,
+        affiliateCampaignCount: affiliateCampaigns.length,
+        highIntentAffiliateLeadCount: affiliateLeads.filter((lead) => Number(lead.predictedValueScore ?? 0) >= 70).length,
+        recentAffiliateLeads: affiliateLeads.slice(0, 5),
+      };
+    }),
+    operationalAlerts: protectedProcedure.query(async () => {
+      const recentLeads = await listRecentLeads();
+      const automationRuns = await listAutomationRuns(20);
+      const broadcastQueues = await listBroadcastQueues(20);
+
+      const suspiciousLeadCount = recentLeads.filter((lead) => Number(lead.predictedValueScore ?? 0) < 55).length;
+      const reviewRequiredRuns = automationRuns.filter((run) => run.status === "review_required" || run.status === "failed");
+      const queueBacklog = broadcastQueues.filter((queue) => queue.status === "ready" || queue.status === "running");
+
+      const alerts = [
+        suspiciousLeadCount > 0
+          ? {
+              code: "suspicious_traffic",
+              severity: "medium",
+              title: "พบ lead ที่ควรตรวจสอบคุณภาพทราฟฟิก",
+              detail: `มี ${suspiciousLeadCount} lead ที่คะแนนต่ำหรือเข้าข่าย review ในชุดข้อมูลล่าสุด`,
+            }
+          : null,
+        reviewRequiredRuns.length > 0
+          ? {
+              code: "automation_review_required",
+              severity: "high",
+              title: "มี automation run ที่ต้อง review",
+              detail: `${reviewRequiredRuns.length} รายการมีสถานะ review_required หรือ failed`,
+            }
+          : null,
+        queueBacklog.length >= 5
+          ? {
+              code: "queue_backlog",
+              severity: "medium",
+              title: "broadcast queue เริ่มค้างสะสม",
+              detail: `พบ ${queueBacklog.length} queue ที่ยังอยู่ในสถานะ ready/running`,
+            }
+          : null,
+      ].filter(
+        (
+          alert,
+        ): alert is {
+          code: string;
+          severity: "medium" | "high";
+          title: string;
+          detail: string;
+        } => Boolean(alert),
+      );
+
+      return {
+        alertCount: alerts.length,
+        alerts,
       };
     }),
   }),

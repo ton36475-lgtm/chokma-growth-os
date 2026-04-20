@@ -4,6 +4,7 @@ import type { TrpcContext } from "./_core/context";
 
 const dbMocks = vi.hoisted(() => ({
   addVipNote: vi.fn(),
+  createAutomationRun: vi.fn(),
   createLead: vi.fn(),
   createLeadEvent: vi.fn(),
   createOrUpdateCustomerProfile: vi.fn(),
@@ -18,8 +19,12 @@ const dbMocks = vi.hoisted(() => ({
   listWhaleProfiles: vi.fn(),
   updateLeadStatus: vi.fn(),
 }));
+const notificationMocks = vi.hoisted(() => ({
+  notifyOwner: vi.fn(),
+}));
 
 vi.mock("./db", () => dbMocks);
+vi.mock("./_core/notification", () => notificationMocks);
 
 import { appRouter } from "./routers";
 
@@ -61,6 +66,8 @@ describe("marketing router", () => {
     dbMocks.createLead.mockResolvedValue(44);
     dbMocks.createLeadEvent.mockResolvedValue(88);
     dbMocks.createOrUpdateCustomerProfile.mockResolvedValue(12);
+    dbMocks.createAutomationRun.mockResolvedValue(91);
+    notificationMocks.notifyOwner.mockResolvedValue(true);
 
     const caller = appRouter.createCaller(createContext());
 
@@ -82,19 +89,37 @@ describe("marketing router", () => {
       sourceType: "ad",
     });
 
-    expect(result).toEqual({ success: true, leadId: 44 });
+    expect(result).toEqual(
+      expect.objectContaining({
+        success: true,
+        leadId: 44,
+        trafficStatus: "trusted",
+        vipTier: "whale",
+        notificationDelivered: true,
+      }),
+    );
     expect(dbMocks.createLead).toHaveBeenCalledWith(
       expect.objectContaining({
         utmSource: "meta",
         utmCampaign: "chokma-whale",
-        predictedValueScore: "85.00",
+        predictedValueScore: "100.00",
         sourceType: "ad",
+        vipTier: "whale",
       }),
     );
-    expect(dbMocks.createLeadEvent).toHaveBeenCalledWith(
+    expect(dbMocks.createLeadEvent).toHaveBeenNthCalledWith(
+      1,
       expect.objectContaining({
         leadId: 44,
         eventType: "form_submit",
+      }),
+    );
+    expect(dbMocks.createLeadEvent).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        leadId: 44,
+        eventType: "ai_action",
+        eventSource: "ai",
       }),
     );
     expect(dbMocks.createOrUpdateCustomerProfile).toHaveBeenCalledWith(
@@ -102,6 +127,63 @@ describe("marketing router", () => {
         leadId: 44,
         vipLevel: "whale",
         segmentLabel: "High Intent Whale Prospect",
+      }),
+    );
+    expect(notificationMocks.notifyOwner).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: expect.stringContaining("lead คุณภาพสูง"),
+        content: expect.stringContaining("คะแนนคุณภาพ: 100/100"),
+      }),
+    );
+    expect(dbMocks.createAutomationRun).toHaveBeenCalledWith(
+      expect.objectContaining({
+        module: "lead_scoring",
+        status: "completed",
+        targetEntityType: "lead",
+        targetEntityId: 44,
+      }),
+    );
+  });
+
+  it("marks suspicious traffic for review and keeps the profile outside whale workflow", async () => {
+    dbMocks.createLead.mockResolvedValue(45);
+    dbMocks.createLeadEvent.mockResolvedValue(89);
+    dbMocks.createOrUpdateCustomerProfile.mockResolvedValue(13);
+    dbMocks.createAutomationRun.mockResolvedValue(92);
+    notificationMocks.notifyOwner.mockResolvedValue(false);
+
+    const caller = appRouter.createCaller(createContext());
+
+    const result = await caller.leads.submit({
+      fullName: "Test Lead Bot",
+      landingPage: "/preview",
+      referrer: "http://localhost:3000",
+      deviceType: "unknown",
+      notes: "testing flow before launch",
+      sourceType: "manual",
+    });
+
+    expect(result).toEqual(
+      expect.objectContaining({
+        success: true,
+        leadId: 45,
+        trafficStatus: "suspicious",
+        vipTier: "standard",
+        notificationDelivered: false,
+      }),
+    );
+    expect(dbMocks.createOrUpdateCustomerProfile).toHaveBeenCalledWith(
+      expect.objectContaining({
+        leadId: 45,
+        vipLevel: "prospect",
+        followUpStatus: "nurturing",
+        segmentLabel: "Traffic Review Required",
+      }),
+    );
+    expect(dbMocks.createAutomationRun).toHaveBeenCalledWith(
+      expect.objectContaining({
+        status: "review_required",
+        reviewNotes: expect.stringContaining("owner_notification_failed"),
       }),
     );
   });
@@ -173,6 +255,36 @@ describe("marketing router", () => {
     });
   });
 
+  it("allows admin users to trigger owner notifications manually", async () => {
+    notificationMocks.notifyOwner.mockResolvedValue(true);
+
+    const caller = appRouter.createCaller(createContext(createUser("admin")));
+
+    const result = await caller.system.notifyOwner({
+      title: "CHOKMA ops alert",
+      content: "มี lead ใหม่คุณภาพสูงเข้าสู่ระบบ",
+    });
+
+    expect(notificationMocks.notifyOwner).toHaveBeenCalledWith({
+      title: "CHOKMA ops alert",
+      content: "มี lead ใหม่คุณภาพสูงเข้าสู่ระบบ",
+    });
+    expect(result).toEqual({ success: true });
+  });
+
+  it("rejects manual owner notifications from non-admin users", async () => {
+    const caller = appRouter.createCaller(createContext(createUser()));
+
+    await expect(
+      caller.system.notifyOwner({
+        title: "CHOKMA ops alert",
+        content: "มี lead ใหม่คุณภาพสูงเข้าสู่ระบบ",
+      }),
+    ).rejects.toMatchObject<Partial<TRPCError>>({
+      code: "FORBIDDEN",
+    });
+  });
+
   it("builds actual-versus-result dashboard data from snapshot and automation runs", async () => {
     dbMocks.getDashboardSnapshot.mockResolvedValue({
       newLeads: 12,
@@ -212,5 +324,91 @@ describe("marketing router", () => {
         }),
       ],
     });
+  });
+
+  it("summarizes affiliate overview from recent leads and campaign performance", async () => {
+    dbMocks.listRecentLeads.mockResolvedValue([
+      {
+        id: 1,
+        fullName: "Affiliate One",
+        phone: "0800000001",
+        sourceType: "affiliate",
+        utmSource: "partner-network",
+        utmCampaign: "affiliate-q2",
+        utmContent: null,
+        predictedValueScore: "78.00",
+      },
+      {
+        id: 2,
+        fullName: "Organic Lead",
+        phone: "0800000002",
+        sourceType: "organic",
+        utmSource: "google",
+        utmCampaign: "seo-core",
+        utmContent: null,
+        predictedValueScore: "61.00",
+      },
+    ]);
+    dbMocks.getCampaignPerformance.mockResolvedValue([
+      {
+        id: 7,
+        name: "affiliate-q2",
+        channel: "affiliate",
+        landingPath: "/partner/chokma",
+      },
+      {
+        id: 8,
+        name: "meta-scale",
+        channel: "ad",
+        landingPath: "/lp/main",
+      },
+    ]);
+
+    const caller = appRouter.createCaller(createContext(createUser()));
+    const result = await caller.dashboard.affiliateOverview();
+
+    expect(result).toEqual(
+      expect.objectContaining({
+        affiliateLeadCount: 1,
+        affiliateCampaignCount: 1,
+        highIntentAffiliateLeadCount: 1,
+      }),
+    );
+    expect(result.recentAffiliateLeads[0]).toMatchObject({
+      fullName: "Affiliate One",
+      utmCampaign: "affiliate-q2",
+    });
+  });
+
+  it("builds operational alerts from suspicious leads, review-required automation and queue backlog", async () => {
+    dbMocks.listRecentLeads.mockResolvedValue([
+      {
+        id: 1,
+        predictedValueScore: "42.00",
+      },
+    ]);
+    dbMocks.listAutomationRuns.mockResolvedValue([
+      {
+        id: 9,
+        status: "review_required",
+      },
+    ]);
+    dbMocks.listBroadcastQueues.mockResolvedValue([
+      { id: 1, status: "ready" },
+      { id: 2, status: "ready" },
+      { id: 3, status: "ready" },
+      { id: 4, status: "running" },
+      { id: 5, status: "running" },
+    ]);
+
+    const caller = appRouter.createCaller(createContext(createUser()));
+    const result = await caller.dashboard.operationalAlerts();
+
+    expect(result.alertCount).toBe(3);
+    expect(result.alerts.map((alert) => alert.code)).toEqual([
+      "suspicious_traffic",
+      "automation_review_required",
+      "queue_backlog",
+    ]);
   });
 });

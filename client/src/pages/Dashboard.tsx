@@ -1,7 +1,7 @@
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { trpc } from "@/lib/trpc";
-import { ArrowUpRight, BadgeDollarSign, Bot, CircleGauge, Crown, Users } from "lucide-react";
+import { AlertTriangle, ArrowUpRight, BadgeDollarSign, Bot, CircleGauge, Crown, Target, Users } from "lucide-react";
 
 function StatCard({
   title,
@@ -32,15 +32,34 @@ function StatCard({
   );
 }
 
+function getLeadQualityLabel(score: number) {
+  if (score >= 85) return "whale-ready";
+  if (score >= 70) return "high intent";
+  if (score >= 55) return "qualified";
+  return "review";
+}
+
 export default function DashboardPage() {
   const refreshInterval = 10000;
   const snapshot = trpc.dashboard.snapshot.useQuery(undefined, { refetchInterval: refreshInterval });
   const actualVsResult = trpc.dashboard.actualVsResult.useQuery(undefined, { refetchInterval: refreshInterval });
+  const affiliateOverview = trpc.dashboard.affiliateOverview.useQuery(undefined, { refetchInterval: refreshInterval });
+  const operationalAlerts = trpc.dashboard.operationalAlerts.useQuery(undefined, { refetchInterval: refreshInterval });
   const recentLeads = trpc.leads.recent.useQuery(undefined, { refetchInterval: refreshInterval });
   const campaignPerformance = trpc.dashboard.campaignPerformance.useQuery(undefined, { refetchInterval: refreshInterval });
 
   const data = snapshot.data;
   const campaignMetrics = campaignPerformance.data ?? [];
+  const automationRuns = actualVsResult.data?.automationRuns ?? [];
+  const plannedActionsTotal = automationRuns.reduce((sum, run) => sum + Number(run.plannedActions ?? 0), 0);
+  const actualActionsTotal = automationRuns.reduce((sum, run) => sum + Number(run.actualActions ?? 0), 0);
+  const reviewRequiredCount = automationRuns.filter((run) => run.status === "review_required" || run.status === "failed").length;
+  const completionRate = plannedActionsTotal > 0 ? (actualActionsTotal / plannedActionsTotal) * 100 : 0;
+  const highIntentLeadCount = (recentLeads.data ?? []).filter((lead) => Number(lead.predictedValueScore ?? 0) >= 70).length;
+  const referralReadyLeadCount = (recentLeads.data ?? []).filter((lead) => {
+    const source = `${lead.utmSource ?? ""} ${lead.utmCampaign ?? ""} ${lead.sourceType ?? ""}`.toLowerCase();
+    return source.includes("affiliate") || source.includes("refer");
+  }).length;
 
   return (
     <DashboardLayout>
@@ -98,7 +117,7 @@ export default function DashboardPage() {
           />
         </section>
 
-        <section className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
+        <section className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
           <Card className="border-border/70 bg-card/90">
             <CardHeader>
               <CardTitle>ภาพรวมแคมเปญที่ระบบมองเห็น</CardTitle>
@@ -160,11 +179,51 @@ export default function DashboardPage() {
           <Card className="border-border/70 bg-card/90">
             <CardHeader>
               <CardTitle>Actual vs Result</CardTitle>
-              <CardDescription>เปรียบเทียบสิ่งที่ระบบหรือ AI ดำเนินการแล้วกับผลลัพธ์ที่เกิดขึ้นจริง</CardDescription>
+              <CardDescription>เปรียบเทียบสิ่งที่ระบบหรือ AI ตั้งใจทำ จำนวน action ที่เกิดขึ้นจริง และรายการที่ต้อง review ต่อ</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-3">
-              {actualVsResult.data?.automationRuns && actualVsResult.data.automationRuns.length > 0 ? (
-                actualVsResult.data.automationRuns.map((run) => (
+            <CardContent className="space-y-4">
+              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                <div className="rounded-2xl bg-muted/50 p-3 text-sm">
+                  <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Planned actions</p>
+                  <p className="mt-1 text-lg font-semibold">{plannedActionsTotal}</p>
+                </div>
+                <div className="rounded-2xl bg-muted/50 p-3 text-sm">
+                  <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Actual actions</p>
+                  <p className="mt-1 text-lg font-semibold">{actualActionsTotal}</p>
+                </div>
+                <div className="rounded-2xl bg-muted/50 p-3 text-sm">
+                  <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Completion rate</p>
+                  <p className="mt-1 text-lg font-semibold">{completionRate.toFixed(0)}%</p>
+                </div>
+                <div className="rounded-2xl bg-muted/50 p-3 text-sm">
+                  <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Review required</p>
+                  <p className="mt-1 text-lg font-semibold">{reviewRequiredCount}</p>
+                </div>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="rounded-2xl border border-primary/10 bg-primary/5 p-4">
+                  <div className="flex items-center gap-3">
+                    <Target className="h-5 w-5 text-primary" />
+                    <div>
+                      <p className="text-sm font-medium">Lead คุณภาพสูงที่เพิ่งเข้าระบบ</p>
+                      <p className="text-xs text-muted-foreground">อ้างอิงจากคะแนนคุณภาพที่ระบบประเมินจากข้อมูลจริง</p>
+                    </div>
+                  </div>
+                  <p className="mt-3 text-2xl font-semibold">{highIntentLeadCount}</p>
+                </div>
+                <div className="rounded-2xl border border-amber-300/25 bg-amber-300/10 p-4">
+                  <div className="flex items-center gap-3 text-amber-900">
+                    <AlertTriangle className="h-5 w-5" />
+                    <div>
+                      <p className="text-sm font-medium">Lead สาย referral / affiliate</p>
+                      <p className="text-xs text-amber-900/75">ใช้เป็นฐานตั้งต้นสำหรับ referral dashboard และการติดตาม partner traffic</p>
+                    </div>
+                  </div>
+                  <p className="mt-3 text-2xl font-semibold text-amber-950">{referralReadyLeadCount}</p>
+                </div>
+              </div>
+              {automationRuns.length > 0 ? (
+                automationRuns.map((run) => (
                   <div key={run.id} className="rounded-2xl border border-border/70 p-4">
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex items-start gap-3">
@@ -178,14 +237,18 @@ export default function DashboardPage() {
                       </div>
                       <span className="rounded-full bg-muted px-3 py-1 text-xs font-medium text-muted-foreground">{run.status}</span>
                     </div>
-                    <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                    <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                       <div className="rounded-2xl bg-muted/50 p-3 text-sm">
-                        <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Planned / actual actions</p>
+                        <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Planned / actual</p>
                         <p className="mt-1 font-medium">{run.plannedActions} / {run.actualActions}</p>
                       </div>
                       <div className="rounded-2xl bg-muted/50 p-3 text-sm">
                         <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Actual result</p>
                         <p className="mt-1 font-medium">{run.actualResult || "รอผลลัพธ์จริง"}</p>
+                      </div>
+                      <div className="rounded-2xl bg-muted/50 p-3 text-sm">
+                        <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Review notes</p>
+                        <p className="mt-1 font-medium">{run.reviewNotes || "ไม่มีประเด็นต้อง review เพิ่ม"}</p>
                       </div>
                     </div>
                   </div>
@@ -195,11 +258,86 @@ export default function DashboardPage() {
                   ตอนนี้ยังไม่มี automation run ถูกบันทึก แต่ data model พร้อมใช้สำหรับติดตาม planned actions, actual actions และผลจริงของ workflow ที่จะต่อยอดภายหลัง
                 </div>
               )}
+               </CardContent>
+          </Card>
+        </section>
+
+        <section className="grid gap-6 lg:grid-cols-2">
+          <Card className="border-border/70 bg-card/90">
+            <CardHeader>
+              <CardTitle>Referral / Affiliate Tracking</CardTitle>
+              <CardDescription>มุมมองเริ่มต้นสำหรับ traffic ที่มาจาก partner, referral และ affiliate-style acquisition</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid gap-3 sm:grid-cols-3">
+                <div className="rounded-2xl bg-muted/50 p-3 text-sm">
+                  <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Affiliate leads</p>
+                  <p className="mt-1 text-lg font-semibold">{affiliateOverview.data?.affiliateLeadCount ?? 0}</p>
+                </div>
+                <div className="rounded-2xl bg-muted/50 p-3 text-sm">
+                  <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">High-intent affiliate leads</p>
+                  <p className="mt-1 text-lg font-semibold">{affiliateOverview.data?.highIntentAffiliateLeadCount ?? 0}</p>
+                </div>
+                <div className="rounded-2xl bg-muted/50 p-3 text-sm">
+                  <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Affiliate campaigns</p>
+                  <p className="mt-1 text-lg font-semibold">{affiliateOverview.data?.affiliateCampaignCount ?? 0}</p>
+                </div>
+              </div>
+              {affiliateOverview.data?.recentAffiliateLeads?.length ? (
+                <div className="space-y-3">
+                  {affiliateOverview.data.recentAffiliateLeads.map((lead) => (
+                    <div key={lead.id} className="rounded-2xl border border-border/70 p-4 text-sm">
+                      <div className="flex items-center justify-between gap-4">
+                        <div>
+                          <p className="font-medium">{lead.fullName || lead.phone || `Lead #${lead.id}`}</p>
+                          <p className="text-muted-foreground">{lead.utmCampaign || lead.utmSource || lead.sourceType}</p>
+                        </div>
+                        <span className="rounded-full bg-muted px-3 py-1 text-xs font-medium text-muted-foreground">score {lead.predictedValueScore}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="rounded-2xl border border-dashed border-border p-6 text-sm leading-7 text-muted-foreground">
+                  ตอนนี้ยังไม่พบ lead สาย affiliate หรือ referral ในชุดข้อมูลล่าสุด แต่บล็อกนี้พร้อมใช้ทันทีเมื่อเริ่มติดแท็ก sourceType หรือ utm ที่เกี่ยวข้อง
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card className="border-border/70 bg-card/90">
+            <CardHeader>
+              <CardTitle>Operational Alerts</CardTitle>
+              <CardDescription>ใช้เฝ้าระวังงานที่อาจสะดุด เช่น suspicious traffic, automation review และ queue backlog</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="rounded-2xl bg-muted/50 p-3 text-sm">
+                <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Open alerts</p>
+                <p className="mt-1 text-lg font-semibold">{operationalAlerts.data?.alertCount ?? 0}</p>
+              </div>
+              {operationalAlerts.data?.alerts?.length ? (
+                <div className="space-y-3">
+                  {operationalAlerts.data.alerts.map((alert) => (
+                    <div key={alert.code} className="rounded-2xl border border-border/70 p-4 text-sm">
+                      <div className="flex items-center justify-between gap-4">
+                        <p className="font-medium">{alert.title}</p>
+                        <span className="rounded-full bg-muted px-3 py-1 text-xs font-medium uppercase text-muted-foreground">{alert.severity}</span>
+                      </div>
+                      <p className="mt-2 leading-6 text-muted-foreground">{alert.detail}</p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="rounded-2xl border border-dashed border-border p-6 text-sm leading-7 text-muted-foreground">
+                  ตอนนี้ยังไม่พบ operational alert ที่เปิดอยู่ ระบบจะแสดงรายการอัตโนมัติเมื่อเจอ suspicious traffic, automation run ที่ต้อง review หรือ queue backlog ที่มากผิดปกติ
+                </div>
+              )}
             </CardContent>
           </Card>
         </section>
 
-        <section className="grid gap-4 xl:grid-cols-[1.05fr_0.95fr]">
+        <section className="grid gap-6 lg:grid-cols-[1fr_0.9fr]">
+
           <Card className="border-border/70 bg-card/90">
             <CardHeader>
               <CardTitle>Lead ล่าสุดที่เข้าสู่ระบบ</CardTitle>
@@ -216,7 +354,7 @@ export default function DashboardPage() {
                       </div>
                       <div className="rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">{lead.leadStatus}</div>
                     </div>
-                    <div className="mt-4 grid gap-3 sm:grid-cols-4">
+                    <div className="mt-4 grid gap-3 sm:grid-cols-5">
                       <div>
                         <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">VIP tier</p>
                         <p className="mt-1 text-sm font-medium">{lead.vipTier}</p>
@@ -232,6 +370,10 @@ export default function DashboardPage() {
                       <div>
                         <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Value score</p>
                         <p className="mt-1 text-sm font-medium">{lead.predictedValueScore}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Traffic label</p>
+                        <p className="mt-1 text-sm font-medium">{getLeadQualityLabel(Number(lead.predictedValueScore ?? 0))}</p>
                       </div>
                     </div>
                   </div>
